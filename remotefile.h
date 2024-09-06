@@ -7,7 +7,7 @@
 #include <map>
 #include <vector>
 #include <tiny-json.h>
-#include <sstream>
+#include <ostream>
 
 class RemoteFile
 {
@@ -25,22 +25,24 @@ public:
 
         public:
             Action() : address_(0), value_(0), delay_(0) {}
-            //Action(const char *type, int address, int value, int delay) : type_(type), address_(address), value_(value), delay_(delay) {}
+            Action(const char *type, int address, int value, int delay) : type_(type), address_(address), value_(value), delay_(delay) {}
 
             const char *type() const { return type_.str(); }
-            //void setType(const char *type) { type_ = type; }
+            void setType(const char *type) { type_ = type; }
 
             int address() const { return address_; }
-            //void setAddress(int address) { address_ = address; }
+            void setAddress(int address) { address_ = address; }
 
             int value() const { return value_; }
-            //void setValue(int value) { value_ = value; }
+            void setValue(int value) { value_ = value; }
             
             int delay() const { return delay_; }
-            //void setDelay(int delay) { delay_ = delay; }
+            void setDelay(int delay) { delay_ = delay; }
 
             bool loadFromJSON(const json_t *json);
-            void outputJSON(std::stringstream &strm) const;
+            void outputJSON(std::ostream &strm) const;
+
+            void clear();
         };
 
         typedef std::vector<Action> ActionList;
@@ -55,26 +57,47 @@ public:
 
     public:
         Button() : repeat_(0), position_(0) {}
+        Button(int position, const char *label, const char *color, const char *redirect, int repeat)
+            : label_(label), color_(color), redirect_(redirect), repeat_(repeat), position_(position) {}
 
         const char *label() const { return label_.str(); }
-        //void setLabel(const char *label) { label_ = label; }
+        void setLabel(const char *label) { label_ = label; }
 
         const char *color() const { return color_.str(); }
-        //void setColor(const char *color) { color_ = color; }
+        void setColor(const char *color) { color_ = color; }
 
         const char *redirect() const { return redirect_.str(); }
-        //void setRedirect(const char *redirect) { redirect_ = redirect; }
+        void setRedirect(const char *redirect) { redirect_ = redirect; }
             
         int repeat() const { return repeat_; }
-        //void setRepeat(int repeat) { repeat_ = repeat; }
+        void setRepeat(int repeat) { repeat_ = repeat; }
             
         int position() const { return position_; }
-        //void setPosition(int position) { position_ = position; }
 
         const ActionList &actions() const { return actions_; }
 
         bool loadFromJSON(const json_t *json);
-        void outputJSON(std::stringstream &strm) const;
+        void outputJSON(std::ostream &strm) const;
+
+        /**
+         * @brief   Clear all data except for position
+         */
+        void clear();
+
+        /**
+         * @brief   Clear all actions
+         */
+        void clearActions();
+
+        /**
+         * @brief   Add an action to the end of the action list
+         * 
+         * @param   type    IR protocol or other type string
+         * @param   address Address
+         * @param   value   Value
+         * @param   delay   Post command delay in msec
+         */
+        void addAction(const char *type, int address, int value, int delay);
     };
 
     typedef std::map<int, Button> ButtonMap;
@@ -90,12 +113,51 @@ public:
     ~RemoteFile() { clear(); }
 
     const char *filename() const { return filename_.str(); }
+
     const char *title() const { return title_.str(); }
+    void setTitle(const char *title) { title_ = title; }
+
+    /**
+     * @brief   Access the map of buttons
+     * 
+     * @return  Reference to the map of buttons
+     */
     const ButtonMap &buttons() const { return buttons_; }
+
+    /**
+     * @brief   Get pointer to button at specified position
+     * 
+     * @param   position    Position identifier of button
+     * 
+     * @return  Pointer to Button or null if not defined
+     */
+    Button *getButton(int position);
+
+    /**
+     * @brief   Add or update a button
+     * 
+     * @param   position    Position identifier of button
+     * @param   label       Label string (cannot be blank)
+     * @param   color       Color string
+     * @param   redirect    Redirect string
+     * @param   repeat      Repeat interval (msec)
+     * 
+     * @return  Pointer to button if added or updated, null if invalid position or label
+     */
+    Button *addButton(int position, const char *label, const char *color, const char *redirect, int repeat);
+
+    /**
+     * @brief   Remove a button
+     * 
+     * @param   position    Position identifier of button
+     * 
+     * @return  true if button deleted
+     */
+    bool deleteButton(int position);
 
     void clear();
     bool loadFile(const char *filename);
-    void outputJSON(std::stringstream &strm) const;
+    void outputJSON(std::ostream &strm) const;
 };
 
 #endif

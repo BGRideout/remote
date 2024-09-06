@@ -26,6 +26,7 @@ private:
 
 public:
     JSONString() : string_(nullptr), buflen_(0) {}
+    JSONString(const char *string);
     JSONString(const JSONString &other);
     ~JSONString();
 

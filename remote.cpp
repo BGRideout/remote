@@ -8,6 +8,7 @@
 #include <lfs.h>
 #include <sys/stat.h>
 #include <tiny-json.h>
+#include <sstream>
 
 #define ROOT_OFFSET 0x140000
 #define ROOT_SIZE   0x060000
@@ -103,6 +104,16 @@ int main ()
                 sleep_ms(10);
             }
         }
+
+        
+        RemoteFile::Button *btn = rfile.addButton(38, "Cast", "LightMagenta", "", 0);;
+        if (btn)
+        {
+            btn->clearActions();
+            btn->addAction("bogus", 1, 2, 3);
+        }
+
+        rfile.deleteButton(31);
 
         std::stringstream out;
         rfile.outputJSON(out);

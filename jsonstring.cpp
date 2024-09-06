@@ -5,6 +5,14 @@
 
 char JSONString::blank_[] = "";
 
+JSONString::JSONString(const char *string)
+{
+    int ll = strlen(string);
+    buflen_ = ((ll + 32) / 32) * 32;
+    string_ = new char[buflen_];
+    memcpy(string_, string, buflen_);
+}
+
 JSONString::JSONString(const JSONString &other) : string_(nullptr), buflen_(0)
 {
     *this = other;
@@ -79,11 +87,11 @@ void JSONString::operator = (const char *string)
     }
 
     //  IF not assigned, allocate and copy
-    if (buflen_ == 0)
+    if (buflen_ == 0 && ll > 0)
     {
         buflen_ = ((ll + 32) / 32) * 32;
         string_ = new char[buflen_];
-        memcpy(string_, string, buflen_);
+        strncpy(string_, string, buflen_);
     }
 }
 

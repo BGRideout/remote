@@ -64,7 +64,7 @@ bool RemoteFile::loadFile(const char *filename)
     return ret;
 }
 
-void RemoteFile::outputJSON(std::stringstream &strm) const
+void RemoteFile::outputJSON(std::ostream &strm) const
 {
     strm << "{\"title\":\"" << title() << "\",\n"
          << "\"buttons:\":[";
@@ -77,6 +77,51 @@ void RemoteFile::outputJSON(std::stringstream &strm) const
     }
     strm << "\n]}\n";
 }
+
+RemoteFile::Button *RemoteFile::getButton(int position)
+{
+    Button *ret = nullptr;
+    auto it = buttons_.find(position);
+    if (it != buttons_.end())
+    {
+        ret = &it->second;
+    }
+    return ret;
+}
+
+RemoteFile::Button *RemoteFile::addButton(int position, const char *label, const char *color, const char *redirect, int repeat)
+{
+    Button *btn = nullptr;
+    if (position > 0 && strlen(label) > 0)
+    {
+        btn = getButton(position);
+        if (!btn)
+        {
+            std::pair<ButtonMap::iterator, bool> sts;
+            sts = buttons_.emplace(std::pair<int, Button>(position, Button(position, label, color, redirect, repeat)));
+            if (sts.second)
+            {
+                btn = &sts.first->second;
+            }
+        }
+        else
+        {
+            btn->setLabel(label);
+            btn->setColor(color);
+            btn->setRedirect(redirect);
+            btn->setRepeat(repeat);
+        }
+    }
+    return btn;
+}
+
+bool RemoteFile::deleteButton(int position)
+{
+    return buttons_.erase(position) > 0;
+}
+
+
+//                  *****  RemoteFile::Button  *****
 
 bool RemoteFile::Button::loadFromJSON(const json_t *json)
 {
@@ -147,7 +192,7 @@ bool RemoteFile::Button::loadFromJSON(const json_t *json)
 
     return ret;
 }
-void RemoteFile::Button::outputJSON(std::stringstream &strm) const
+void RemoteFile::Button::outputJSON(std::ostream &strm) const
 {
     strm << "{\"pos\":" << position() << ","
          << "\"lbl\":\"" << label() << "\","
@@ -166,6 +211,28 @@ void RemoteFile::Button::outputJSON(std::stringstream &strm) const
     strm << "]}";
 }
 
+void RemoteFile::Button::clear()
+{
+    label_.clear();
+    color_.clear();
+    redirect_.clear();
+    repeat_ = 0;
+    actions_.clear();
+}
+
+void RemoteFile::Button::clearActions()
+{
+    actions_.clear();
+}
+
+void RemoteFile::Button::addAction(const char *type, int address, int value, int delay)
+{
+    actions_.emplace_back(type, address, value, delay);
+}
+
+
+
+//                  *****  RemoteFile::Button::Action  *****
 
 bool RemoteFile::Button::Action::loadFromJSON(const json_t *json)
 {
@@ -217,10 +284,18 @@ bool RemoteFile::Button::Action::loadFromJSON(const json_t *json)
     return ret;
 }
 
-void RemoteFile::Button::Action::outputJSON(std::stringstream &strm) const
+void RemoteFile::Button::Action::outputJSON(std::ostream &strm) const
 {
     strm << "{\"typ\":\"" << type() << "\""
          << ",\"add\":" << address()
          << ",\"val\":" << value()
          << ",\"dly\":" << delay() << "}";
+}
+
+void RemoteFile::Button::Action::clear()
+{
+    type_.clear();
+    address_ = 0;
+    value_ = 0;
+    delay_ = 0;
 }
