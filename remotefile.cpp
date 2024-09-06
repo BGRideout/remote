@@ -1,6 +1,7 @@
 //                  *****  RemoteFile Implementation  *****
 
 #include "remotefile.h"
+#include <algorithm>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -48,13 +49,11 @@ bool RemoteFile::loadFile(const char *filename)
                     if (pos)
                     {
                         int position = json_getInteger(pos);
-                        if (position > 0)
+                        if (position > 0 && !getButton(position))
                         {
-                            std::pair<ButtonMap::iterator, bool> sts = buttons_.emplace(std::pair<int, Button>(position, Button()));
-                            if (sts.second)
-                            {
-                                ret = sts.first->second.loadFromJSON(button);
-                            }
+                            auto i1 = std::lower_bound(buttons_.begin(), buttons_.end(), Button(position));
+                            auto i2 = buttons_.emplace(i1, Button());
+                            ret = i2->loadFromJSON(button);
                         }
                     }
                 }
@@ -73,7 +72,7 @@ void RemoteFile::outputJSON(std::ostream &strm) const
     {
         strm << sep;
         sep = ",\n\n";
-        it->second.outputJSON(strm);
+        it->outputJSON(strm);
     }
     strm << "\n]}\n";
 }
@@ -81,10 +80,10 @@ void RemoteFile::outputJSON(std::ostream &strm) const
 RemoteFile::Button *RemoteFile::getButton(int position)
 {
     Button *ret = nullptr;
-    auto it = buttons_.find(position);
+    auto it = std::find(buttons_.begin(), buttons_.end(), Button(position));
     if (it != buttons_.end())
     {
-        ret = &it->second;
+        ret = &(*it);
     }
     return ret;
 }
@@ -97,12 +96,9 @@ RemoteFile::Button *RemoteFile::addButton(int position, const char *label, const
         btn = getButton(position);
         if (!btn)
         {
-            std::pair<ButtonMap::iterator, bool> sts;
-            sts = buttons_.emplace(std::pair<int, Button>(position, Button(position, label, color, redirect, repeat)));
-            if (sts.second)
-            {
-                btn = &sts.first->second;
-            }
+            auto i1 = std::lower_bound(buttons_.begin(), buttons_.end(), Button(position));
+            auto i2 = buttons_.emplace(i1, position, label, color, redirect, repeat);
+            btn = &(*i2);
         }
         else
         {
@@ -117,8 +113,33 @@ RemoteFile::Button *RemoteFile::addButton(int position, const char *label, const
 
 bool RemoteFile::deleteButton(int position)
 {
-    return buttons_.erase(position) > 0;
+    bool ret = false;
+    auto it = std::find(buttons_.begin(), buttons_.end(), Button(position));
+    if (it != buttons_.end())
+    {
+        buttons_.erase(it);
+        ret = true;
+    }
+    return ret;
 }
+
+bool RemoteFile::changePosition(Button *button, int newpos)
+{
+    bool ret = false;
+    if (button && newpos > 0)
+    {
+        Button *other = getButton(newpos);
+        if (other)
+        {
+            other->setPosition(button->position());
+        }
+        button->setPosition(newpos);
+        std::sort(buttons_.begin(), buttons_.end());
+    }
+
+    return ret;
+}
+
 
 
 //                  *****  RemoteFile::Button  *****
@@ -230,6 +251,8 @@ void RemoteFile::Button::addAction(const char *type, int address, int value, int
     actions_.emplace_back(type, address, value, delay);
 }
 
+bool operator < (const RemoteFile::Button &lhs, const RemoteFile::Button &rhs) {return lhs.position() < rhs.position(); }
+bool operator == (const RemoteFile::Button &lhs, const RemoteFile::Button &rhs) {return lhs.position() == rhs.position(); }
 
 
 //                  *****  RemoteFile::Button::Action  *****

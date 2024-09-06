@@ -92,10 +92,10 @@ int main ()
     if (rfile.loadFile("actions.json"))
     {
         printf("%s : %s\n", rfile.filename(), rfile.title());
-        const RemoteFile::ButtonMap &btns = rfile.buttons();
+        const RemoteFile::ButtonList &btns = rfile.buttons();
         for (auto it = btns.cbegin(); it != btns.cend(); ++it)
         {
-            const RemoteFile::Button &btn = it->second;
+            const RemoteFile::Button &btn = *it;
             printf("%d %s %s %s %d\n", btn.position(), btn.label(), btn.color(), btn.redirect(), btn.repeat());
             const RemoteFile::Button::ActionList &acts = btn.actions();
             for (auto i2 = acts.cbegin(); i2 != acts.cend(); ++i2)
@@ -106,7 +106,7 @@ int main ()
         }
 
         
-        RemoteFile::Button *btn = rfile.addButton(38, "Cast", "LightMagenta", "", 0);;
+        RemoteFile::Button *btn = rfile.addButton(30, "Cast", "LightMagenta", "", 0);;
         if (btn)
         {
             btn->clearActions();
@@ -114,6 +114,8 @@ int main ()
         }
 
         rfile.deleteButton(31);
+
+        rfile.changePosition(rfile.getButton(18), 19);
 
         std::stringstream out;
         rfile.outputJSON(out);

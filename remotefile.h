@@ -4,7 +4,6 @@
 #define REMOTFILE_H
 
 #include "jsonstring.h"
-#include <map>
 #include <vector>
 #include <tiny-json.h>
 #include <ostream>
@@ -14,6 +13,8 @@ class RemoteFile
 public:
     class Button
     {
+        friend class RemoteFile;
+
     public:
         class Action
         {
@@ -55,8 +56,11 @@ public:
         int                 position_;          // Position index
         ActionList          actions_;           // Actions to be performed
 
+        void setPosition(int position) { position_ = position; }
+
     public:
         Button() : repeat_(0), position_(0) {}
+        Button(int position) : repeat_(0), position_(position) {}
         Button(int position, const char *label, const char *color, const char *redirect, int repeat)
             : label_(label), color_(color), redirect_(redirect), repeat_(repeat), position_(position) {}
 
@@ -100,12 +104,12 @@ public:
         void addAction(const char *type, int address, int value, int delay);
     };
 
-    typedef std::map<int, Button> ButtonMap;
+    typedef std::vector<Button> ButtonList;
 
 private:
     JSONString              filename_;          // Loaded file name
     JSONString              title_;             // Page title
-    ButtonMap               buttons_;           // Page buttons
+    ButtonList              buttons_;           // Page buttons
     char                    *data_;             // File data
 
 public:
@@ -120,9 +124,9 @@ public:
     /**
      * @brief   Access the map of buttons
      * 
-     * @return  Reference to the map of buttons
+     * @return  Reference to the list of buttons
      */
-    const ButtonMap &buttons() const { return buttons_; }
+    const ButtonList &buttons() const { return buttons_; }
 
     /**
      * @brief   Get pointer to button at specified position
@@ -154,6 +158,19 @@ public:
      * @return  true if button deleted
      */
     bool deleteButton(int position);
+
+    /**
+     * @brief   Change a button's position.
+     * 
+     * @details If a button already has the new position, it is moved to the position
+     *          of the specified button.
+     * 
+     * @param   button      Button to be moved
+     * @param   newpos      New position for the button
+     * 
+     * @return  true if move as successful
+     */
+    bool changePosition(Button *button, int newpos);
 
     void clear();
     bool loadFile(const char *filename);
