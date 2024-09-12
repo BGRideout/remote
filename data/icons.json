@@ -1,0 +1,92 @@
+{
+"power": "<svg viewbox='0 0 60 60' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 30 5 V 40' stroke='{0}' stroke-width='3' />
+  <path d='M 33.47 12.3 A 20 20 0 1 1 26.53 12.3' stroke='{0}' stroke-width='3' fill='transparent' />
+</svg>",
+
+"|>": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 5 5 L 40 22.5 L 5 40 Z' stroke='{0}' fill='{0}' />
+</svg>",
+
+"||": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <rect x='10' y='10' width='10' height='25' stroke='{0}' fill='{0}' />
+  <rect x='25' y='10' width='10' height='25' stroke='{0}' fill='{0}' />
+</svg>",
+
+"[]": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <rect x='10' y='10' width='25' height='25' stroke='{0}' fill='{0}' />
+</svg>",
+
+"<<": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 22.5 10 L 2 22.5 L 22.5 35 Z M 43 10 L 22.5 22.5 L 43 35 Z' stroke='{0}' fill='{0}' />
+</svg>",
+
+">>": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 2 10 L 22.5 22.5 L 2 35 Z M 22.5 10 L 43 22.5 L 22.5 35 Z' stroke='{0}' fill='{0}' />
+</svg>",
+
+"|<<": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 1 10 V 35 M 22.5 10 L 2 22.5 L 22.5 35 Z M 43 10 L 22.5 22.5 L 43 35 Z'
+   stroke='{0}' stroke-width='3' fill='{0}' />
+</svg>",
+
+">>|": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 2 10 L 22.5 22.5 L 2 35 Z M 22.5 10 L 43 22.5 L 22.5 35 Z M 44 10 V 35'
+   stroke='{0}' stroke-width='3' fill='{0}' />
+</svg>",
+
+"^": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 22.5 10 L 10 35 H 35 Z' stroke='{0}' fill='{0}' />
+</svg>",
+
+"<": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 10 22.5 L 35 10 V 35 Z' stroke='{0}' fill='{0}' />
+</svg>",
+
+">": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 35 22.5 L 10 10 V 35 Z' stroke='{0}' fill='{0}' />
+</svg>",
+
+"v": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 22.5 35 L 10 10 H 35 Z' stroke='{0}' fill='{0}' />
+</svg>",
+
+"pgup": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 22.5 2 L 10 22.5 H 35 Z M 22.5 22.5 L 10 43 H 35 Z' stroke='{0}' fill='{0}' />
+</svg>",
+
+"pgdn": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 22.5 43 L 10 22.5 H 35 Z M 22.5 22.5 L 10 3 H 35 Z' stroke='{0}' fill='{0}' />
+</svg>",
+
+"vol+": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 15 30 V 15 H 5 V 30 H 15 L 35 40 V 5 L 15 15' stroke='{0}' stroke-width='2' fill='{2}' />
+  <path d='M 26 15 L 20 27 H 32 Z' stroke='{0}' fill='{0}' />
+</svg>",
+
+"vol-": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 15 30 V 15 H 5 V 30 H 15 L 35 40 V 5 L 15 15' stroke='{0}' stroke-width='2' fill='{2}' />
+  <path d='M 26 30 L 20 18 H 32 Z' stroke='{0}' fill='{0}' />
+</svg>",
+
+"mute": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 15 30 V 15 H 5 V 30 H 15 L 35 40 V 5 L 15 15' stroke='{0}' stroke-width='2' fill='{2}' />
+  <path d='M 43 2 L 10 43 M 10 2 L 43 43' stroke='white' stroke-width='5' fill='transparnt' />
+  <path d='M 43 2 L 10 43 M 10 2 L 43 43' stroke='red' stroke-width='3' fill='transparnt' />
+</svg>",
+
+"ch+": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 22.5 5 L 10 20 H 35 Z' stroke='{0}' stroke-width='2' fill='{0}' />
+  <text style='font: bold 18px sans-serif;' x='10' y='40'>Ch</text>
+</svg>",
+
+"ch-": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 22.5 40 L 10 25 H 35 Z' stroke='{0}' stroke-width='2' fill='{0}' />
+  <text style='font: bold 18px sans-serif;' x='10' y='20'>Ch</text>
+</svg>",
+
+"open close": "<svg viewbox='0 0 45 45' width='45' height='45' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M 22.5 10 L 10 25 H 35 Z' stroke='{0}' stroke-width='2' fill='{0}' />
+  <rect x='10' y='30' width='25' height='5' stroke='{0}' fill='{0}' />
+</svg>"
+}

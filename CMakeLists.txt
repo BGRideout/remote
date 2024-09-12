@@ -29,15 +29,21 @@ project(remote C CXX ASM)
 add_subdirectory(${PICO_SDK_PATH}/../pico-filesystem pfs)
 add_subdirectory(${PICO_SDK_PATH}/../tiny-json tiny-json)
 
+# Add the utility libraries
+add_subdirectory(../picolibs picolibs)
+
 add_executable(${PROJECT_NAME} 
     remote.cpp
 	remotefile.cpp
 	jsonstring.cpp
+	jsonmap.cpp
+	web.cpp
+	httprequest.cpp
+	config.cpp
+	${CMAKE_CURRENT_BINARY_DIR}/generated/web_files.cpp
 	)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/dhcpserver)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/build/generated)
+	target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 
 pico_set_program_name(${PROJECT_NAME} "remote")
 pico_set_program_version(${PROJECT_NAME} "0.1")
@@ -47,7 +53,26 @@ pico_enable_stdio_usb(${PROJECT_NAME} 1)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC pico_stdlib 
     pico_cyw43_arch_lwip_threadsafe_background pico_lwip_mbedtls pico_mbedtls pico_lwip_mdns
-    flash_filesystem tiny-json)
+    flash_filesystem tiny-json bgr_network bgr_util)
 
 pico_add_extra_outputs(${PROJECT_NAME})
 
+
+find_package (Python3 REQUIRED COMPONENTS Interpreter)
+set(WEB_RESOURCE_FILES data/backup.html data/backup.js data/config.html data/config.js
+    data/webremote.css data/webremote.js data/websocket.js data/favicon.ico data/icons.json
+    ${CERTS})
+set(WEB_FILES_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(WEB_FILES "${WEB_FILES_DIR}/web_files.cpp")
+set(WEB_FILES_TARGET "${PROJECT_NAME}_web_files")
+add_custom_target(${WEB_FILES_TARGET} DEPENDS ${WEB_RESOURCE_FILES})
+add_custom_command(
+	OUTPUT ${WEB_FILES}
+	DEPENDS ${WEB_RESOURCE_FILES}
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${WEB_FILES_DIR} &&
+			${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/create_web_files.py -o ${WEB_FILES} ${WEB_RESOURCE_FILES}
+	VERBATIM)
+add_dependencies(${PROJECT_NAME}
+	${WEB_FILES_TARGET}
+	)

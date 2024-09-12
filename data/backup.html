@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Data Save and Load</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="/webremote.css" />
+  <script type="text/javascript" src="/backup.js"></script>
+ </head>
+ <body>
+  <h1>Data Save and Load</h1>
+  <div class='backupform'>
+   <form id="saveForm" method="post" enctype="multipart/form-data">
+    <fieldset>
+     <legend>Save</legend>
+     <p><label for='save'>File to save</label></p>
+     <p>
+      <select id="save" name="savefile">
+       !!files!!
+      </select>
+     </p>
+     <p><button type='submit' name='button' value='download'>Download</button></p>
+    </fieldset>
+   </form>
+   <form id="loadForm" method="post" enctype="multipart/form-data">
+    <fieldset>
+     <legend>Load</legend>
+     <p><label for='actfile'>File to load</label></p>
+     <p><input type='file' name='actfile' id='actfile'/></p>
+     <p><button type='submit' name='button' value='upload'>Upload</button></p>
+    </fieldset>
+   </form>
+   <p class="msg" id="filemsg">!!msg!!</p>
+  </div>
+ </body>
+</html>

@@ -48,6 +48,11 @@
         "ostream": "cpp",
         "stdexcept": "cpp",
         "streambuf": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "tiny-json.h": "c",
+        "map": "cpp",
+        "set": "cpp",
+        "istream": "cpp",
+        "sstream": "cpp"
     }
 }

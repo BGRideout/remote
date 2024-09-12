@@ -1,0 +1,184 @@
+body
+{
+  text-align: center;
+  font-family: sans-serif;
+  width: 350px;
+  margin: auto;
+  background: lightgray;
+}
+
+h1
+{
+  margin: 0px;
+}
+
+span.led
+{
+  display: inline-block;
+  float: right;
+  margin-right: 8px;
+  margin-top: 8px;
+  width: 25px;
+  height: 25px;
+  z-index: 10;
+}
+
+div.buttons
+{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 70px;
+  width: 100%;
+}
+
+.buttons button
+{
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  margin: auto;
+  font-weight: bold;
+}
+
+button.redir
+{
+  width: 64px;
+  height: 40px;
+  border-radius: 0px;
+}
+
+.back
+{
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  float: left;
+  margin: 8px 0px 16px 8px;
+  font-weight: bold;
+}
+
+svg
+{
+  pointer-events: none;
+}
+
+fieldset
+{
+  margin-top: 12px;
+}
+
+input
+{
+  width: 128px;
+}
+
+div.setup
+{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 80px;
+  width: 350px;
+  margin: auto;
+}
+
+.setup button
+{
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+}
+
+.setparms
+{
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  row-gap: 8px;
+  margin-left: 20px;
+}
+
+.setparms label
+{
+  text-align: left;
+}
+
+.setparms input
+{
+  width: 192px;
+}
+
+.unsaved
+{
+  color: gray;
+}
+
+input.title
+{
+  width: 128px;
+}
+
+table
+{
+  display: inline-table;
+}
+
+tbody input
+{
+  width: 55px;
+}
+
+td.lbl
+{
+  text-align: left;
+  font-weight: bold;
+}
+
+p.irget
+{
+  color: red;
+}
+
+.config
+{
+  display: grid;
+  grid-template-columns: 3fr 3fr 1fr;
+  row-gap: 8px;
+}
+
+.config label
+{
+  width: 100px;
+  display: inline-block;
+  text-align: left;
+}
+
+.config input
+{
+  width: 192px;
+}
+
+.config select
+{
+  width: 200px;
+}
+
+.right
+{
+  text-align: right;
+  display: inline-block;
+  width:80%;
+}
+
+.backupform
+{
+  text-align: left;
+}
+
+.backupform input
+{
+  width: 100%;
+}
+
+.msg
+{
+  color: red;
+}

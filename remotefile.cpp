@@ -43,6 +43,12 @@ bool RemoteFile::loadFile(const char *filename)
             json_t const *buttons = json_getProperty(json, "buttons");
             if (buttons && json_getType(buttons) == JSON_ARRAY)
             {
+                int nb = 0;
+                for (json_t const *button = json_getChild(buttons); button != nullptr; button = json_getSibling(button))
+                {
+                    nb++;
+                }
+                buttons_.reserve(nb);
                 for (json_t const *button = json_getChild(buttons); ret && button != nullptr; button = json_getSibling(button))
                 {
                     json_t const *pos = json_getProperty(button, "pos");
@@ -96,6 +102,10 @@ RemoteFile::Button *RemoteFile::addButton(int position, const char *label, const
         btn = getButton(position);
         if (!btn)
         {
+            if (buttons_.size() == buttons_.capacity())
+            {
+                buttons_.reserve(buttons_.size() + 16);
+            }
             auto i1 = std::lower_bound(buttons_.begin(), buttons_.end(), Button(position));
             auto i2 = buttons_.emplace(i1, position, label, color, redirect, repeat);
             btn = &(*i2);
@@ -199,6 +209,12 @@ bool RemoteFile::Button::loadFromJSON(const json_t *json)
         prop = json_getProperty(json, "action");
         if (prop)
         {
+            int na = 0;
+            for (json_t const *aprop = json_getChild(prop); ret && aprop != nullptr; aprop = json_getSibling(aprop))
+            {
+                na++;
+            }
+            actions_.reserve(na);
             for (json_t const *aprop = json_getChild(prop); ret && aprop != nullptr; aprop = json_getSibling(aprop))
             {
                 actions_.emplace_back();
@@ -248,6 +264,10 @@ void RemoteFile::Button::clearActions()
 
 void RemoteFile::Button::addAction(const char *type, int address, int value, int delay)
 {
+    if (actions_.size() == actions_.capacity())
+    {
+        actions_.reserve(actions_.size() + 16);
+    }
     actions_.emplace_back(type, address, value, delay);
 }
 
