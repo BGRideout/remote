@@ -51,13 +51,23 @@ bool Remote::init()
     return ret;
 }
 
-bool Remote::http_message(WEB *web, void *client, HTTPRequest &rqst)
+bool Remote::http_message(WEB *web, void *client, const HTTPRequest &rqst)
 {
     bool ret = false;
  
     if (rqst.type() == "GET")
     {
         ret = http_get(web, client, rqst);
+    }
+    else if (rqst.type() == "POST")
+    {
+        std::multimap<std::string, std::string> data;
+        rqst.postData(data);
+        printf("Post data[%d]\n", data.size());
+        for (auto it = data.cbegin(); it != data.cend(); ++it)
+        {
+            printf("%s=%s\n", it->first.c_str(), it->second.c_str());
+        }
     }
     return ret;
 }
@@ -108,7 +118,7 @@ void Remote::ws_message(WEB *web, void *client, const std::string &msg)
     }
  }
 
-bool Remote::http_get(WEB *web, void *client, HTTPRequest &rqst)
+bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst)
 {
     bool ret = false;
     std::string url = rqst.path();
@@ -128,7 +138,7 @@ bool Remote::http_get(WEB *web, void *client, HTTPRequest &rqst)
     return ret;
 }
 
-bool Remote::remote_page(WEB *web, void *client, HTTPRequest &rqst)
+bool Remote::remote_page(WEB *web, void *client, const HTTPRequest &rqst)
 {
     bool ret = false;
     std::string action_file = "actions.json";

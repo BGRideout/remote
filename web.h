@@ -44,12 +44,13 @@ private:
     class CLIENT
     {
     private:
-        std::string         rqst_;                  // Request message
-        struct altcp_pcb    *pcb_;                  // Client pcb
-        bool                closed_;                // Closed flag
-        bool                websocket_;             // Web socket open flag
+        std::string             rqst_;              // Request message
+        struct altcp_pcb        *pcb_;              // Client pcb
+        bool                    closed_;            // Closed flag
+        bool                    websocket_;         // Web socket open flag
 
-        std::list<SENDBUF *> sendbuf_;              // Send buffers
+        std::list<SENDBUF *>    sendbuf_;           // Send buffers
+        HTTPRequest             http_;              // HTTP request info
         WebsocketPacketHeader_t wshdr_;             // Websocket message header
 
         CLIENT() : pcb_(nullptr), closed_(true), websocket_(false) {}
@@ -60,10 +61,11 @@ private:
 
         void addToRqst(const char *str, u16_t ll);
         bool rqstIsReady();
-        bool getWSMessage();
         void clearRqst() { rqst_.clear(); }
         void resetRqst();
+        std::string &rqst() { return rqst_; }
         const std::string &rqst() const { return rqst_; }
+        const HTTPRequest &http() const { return http_; }
         const WebsocketPacketHeader_t &wshdr() const { return wshdr_; }
 
         struct altcp_pcb *pcb() const { return pcb_; }
@@ -87,10 +89,10 @@ private:
     static err_t tcp_server_poll(void *arg, struct altcp_pcb *tpcb);
     static void  tcp_server_err(void *arg, err_t err);
 
-    void process_rqst(struct altcp_pcb *client_pcb);
-    void process_http_rqst(CLIENT &client, HTTPRequest &rqst);
-    void open_websocket(struct altcp_pcb *client_pcb, HTTPRequest &rqst);
-    void process_websocket(struct altcp_pcb *client_pcb);
+    void process_rqst(CLIENT &client);
+    void process_http_rqst(CLIENT &client);
+    void open_websocket(CLIENT &client);
+    void process_websocket(CLIENT &client);
     void send_websocket(struct altcp_pcb *client_pcb, enum WebSocketOpCode opc, const std::string &payload, bool mask = false);
 
     void close_client(struct altcp_pcb *client_pcb, bool isClosed = false);
@@ -126,18 +128,16 @@ private:
     err_t send_buffer(struct altcp_pcb *client_pcb, void *buffer, u16_t buflen, bool allocate = true);
     err_t write_next(struct altcp_pcb *client_pcb);
 
-    bool (*http_callback_)(WEB *web, void *client, HTTPRequest &rqst);
+    bool (*http_callback_)(WEB *web, void *client, const HTTPRequest &rqst);
     void (*message_callback_)(WEB *web, void *client, const std::string &msg);
     void (*notice_callback_)(int state);
     void send_notice(int state) {if (notice_callback_) notice_callback_(state);}
-
-    std::string uri_decode(const std::string &uri) const;
 
 public:
     static WEB *get();
     bool init();
 
-    void set_http_callback(bool (*cb)(WEB *web, void *client, HTTPRequest &rqst)) { http_callback_ = cb; }
+    void set_http_callback(bool (*cb)(WEB *web, void *client, const HTTPRequest &rqst)) { http_callback_ = cb; }
     void set_message_callback(void(*cb)(WEB *web, void *client, const std::string &msg)) { message_callback_ = cb; }
     void broadcast_websocket(const std::string &txt);
 

@@ -169,19 +169,23 @@ err_t WEB::tcp_server_recv(void *arg, struct altcp_pcb *tpcb, struct pbuf *p, er
                 ci->second.addToRqst(buf, l);
             }
         }
+
         altcp_recved(tpcb, p->tot_len);
 
-        while (ci->second.rqstIsReady())
+        if (ci != web->clients_.end())
         {
-            if (!ci->second.isWebSocket())
+            while (ci->second.rqstIsReady())
             {
-                web->process_rqst(tpcb);
+                if (!ci->second.isWebSocket())
+                {
+                    web->process_rqst(ci->second);
+                }
+                else
+                {
+                    web->process_websocket(ci->second);
+                }
+                ci->second.resetRqst();
             }
-            else
-            {
-                web->process_websocket(tpcb);
-            }
-            ci->second.resetRqst();
         }
     }
     else
@@ -285,54 +289,41 @@ err_t WEB::write_next(altcp_pcb *client_pcb)
     return err;    
 }
 
-void WEB::process_rqst(struct altcp_pcb *client_pcb)
+void WEB::process_rqst(CLIENT &client)
 {
     bool ok = false;
-    auto ci = clients_.find(client_pcb);
-    if (ci != clients_.end())
+    printf("Request:\n%s\n", client.rqst().c_str());
+    if (!client.isWebSocket())
     {
-        printf("Request:\n%s\n", ci->second.rqst().c_str());
-        HTTPRequest rqst(ci->second.rqst());
-        if (!ci->second.isWebSocket())
+        ok = true;
+        std::string url = client.http().url();
+        if (url == "/ws/")
         {
-            ok = true;
-            std::string url = rqst.url();
-            if (url == "/ws/")
-            {
-                open_websocket(client_pcb, rqst);
-            }
-            else
-            {
-                process_http_rqst(ci->second, rqst);
-            }
+            open_websocket(client);
         }
         else
         {
-            process_http_rqst(ci->second, rqst);
-        }
-
-        if (!ok)
-        {
-            send_buffer(client_pcb, (void *)"HTTP/1.0 500 Internal Server Error\r\n\r\n", 38);
-        }
-
-        if (!ci->second.isWebSocket())
-        {
-            close_client(client_pcb);
+            process_http_rqst(client);
         }
     }
-    else
+
+    if (!ok)
     {
-        process_websocket(client_pcb);
+        send_buffer(client.pcb(), (void *)"HTTP/1.0 500 Internal Server Error\r\n\r\n", 38);
+    }
+
+    if (!client.isWebSocket())
+    {
+        close_client(client.pcb());
     }
 }
 
-void WEB::process_http_rqst(CLIENT &client, HTTPRequest &rqst)
+void WEB::process_http_rqst(CLIENT &client)
 {
     const char *data;
     u16_t datalen = 0;
     bool is_static = false;
-    if (http_callback_ && http_callback_(this, &client, rqst))
+    if (http_callback_ && http_callback_(this, &client, client.http()))
     {
         ;
     }
@@ -349,106 +340,98 @@ bool WEB::send_data(void *client, const char *data, u16_t datalen, bool allocate
     return true;
 }
 
-void WEB::open_websocket(struct altcp_pcb *client_pcb, HTTPRequest &rqst)
+void WEB::open_websocket(CLIENT &client)
 {
-    printf("Accepting websocket connection on %p\n", client_pcb);
-    auto ci = clients_.find(client_pcb);
-    if (ci != clients_.end())
+    printf("Accepting websocket connection on %p\n", client.pcb());
+    std::string host = client.http().header("Host");
+    std::string key = client.http().header("Sec-WebSocket-Key");
+    
+    bool hasConnection = client.http().header("Connection").find("Upgrade") != std::string::npos;
+    bool hasUpgrade = client.http().header("Upgrade") == "websocket";
+    bool hasOrigin = client.http().headerIndex("Origin") > 0;
+    bool hasVersion = client.http().header("Sec-WebSocket-Version") == "13";
+
+    if (hasConnection && hasOrigin && hasUpgrade && hasVersion && host.length() > 0)
     {
-        std::string host = rqst.header("Host");
-        std::string key = rqst.header("Sec-WebSocket-Key");
-        
-        bool hasConnection = rqst.header("Connection").find("Upgrade") != std::string::npos;
-        bool hasUpgrade = rqst.header("Upgrade") == "websocket";
-        bool hasOrigin = rqst.headerIndex("Origin") > 0;
-        bool hasVersion = rqst.header("Sec-WebSocket-Version") == "13";
+        key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+        unsigned char sha1[20];
+        mbedtls_sha1((const unsigned char *)key.c_str(), key.length(), sha1);
+        unsigned char b64[64];
+        size_t b64ll;
+        mbedtls_base64_encode(b64, sizeof(b64), &b64ll, sha1, sizeof(sha1));
 
-        if (hasConnection && hasOrigin && hasUpgrade && hasVersion && host.length() > 0)
-        {
-            key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-            unsigned char sha1[20];
-            mbedtls_sha1((const unsigned char *)key.c_str(), key.length(), sha1);
-            unsigned char b64[64];
-            size_t b64ll;
-            mbedtls_base64_encode(b64, sizeof(b64), &b64ll, sha1, sizeof(sha1));
+        static char resp[]=
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            "Sec-WebSocket-Accept: ";
 
-            static char resp[]=
-                "HTTP/1.1 101 Switching Protocols\r\n"
-                "Upgrade: websocket\r\n"
-                "Connection: Upgrade\r\n"
-                "Sec-WebSocket-Accept: ";
+        static char crlfcrlf[] = "\r\n\r\n";
 
-            static char crlfcrlf[] = "\r\n\r\n";
+        send_buffer(client.pcb(), resp, strlen(resp), false);
+        send_buffer(client.pcb(), b64, b64ll);
+        send_buffer(client.pcb(), crlfcrlf, 4);
 
-            send_buffer(client_pcb, resp, strlen(resp), false);
-            send_buffer(client_pcb, b64, b64ll);
-            send_buffer(client_pcb, crlfcrlf, 4);
-
-            ci->second.setWebSocket();
-            ci->second.clearRqst();
-        }
-        else
-        {
-            printf("Bad websocket request from %p\n", client_pcb);
-        }
+        client.setWebSocket();
+        client.clearRqst();
+    }
+    else
+    {
+        printf("Bad websocket request from %p\n", client.pcb());
     }
 }
 
-void WEB::process_websocket(struct altcp_pcb *client_pcb)
+void WEB::process_websocket(CLIENT &client)
 {
     std::string func;
-    auto ci = clients_.find(client_pcb);
-    if (ci != clients_.end())
+    uint8_t opc = client.wshdr().meta.bits.OPCODE;
+    std::string payload = client.rqst().substr(client.wshdr().start, client.wshdr().length);
+    switch (opc)
     {
-        uint8_t opc = ci->second.wshdr().meta.bits.OPCODE;
-        std::string payload = ci->second.rqst().substr(ci->second.wshdr().start, ci->second.wshdr().length);
-        switch (opc)
+    case WEBSOCKET_OPCODE_TEXT:
+        if (payload.substr(0, 5) == "func=")
         {
-        case WEBSOCKET_OPCODE_TEXT:
-            if (payload.substr(0, 5) == "func=")
+            std::size_t ii = payload.find_first_of(" ");
+            if (ii == std::string::npos)
             {
-                std::size_t ii = payload.find_first_of(" ");
-                if (ii == std::string::npos)
-                {
-                    func = func = payload.substr(5);
-                }
-                else
-                {
-                    func = payload.substr(5, ii - 5);
-                }
+                func = func = payload.substr(5);
             }
-
-            if (func == "get_wifi")
+            else
             {
-                get_wifi(client_pcb);
+                func = payload.substr(5, ii - 5);
             }
-            else if (func == "scan_wifi")
-            {
-                printf("Scan WiFi\n");
-                scan_wifi(client_pcb);
-            }
-            else if (func == "config_update")
-            {
-                update_wifi(payload);
-            }
-            else if (message_callback_)
-            {
-                message_callback_(this, &ci->second, payload);
-            }
-            break;
-
-        case WEBSOCKET_OPCODE_PING:
-            send_websocket(client_pcb, WEBSOCKET_OPCODE_PONG, payload);
-            break;
-
-        case WEBSOCKET_OPCODE_CLOSE:
-            send_websocket(client_pcb, WEBSOCKET_OPCODE_CLOSE, payload);
-            close_client(client_pcb);
-            break;
-
-        default:
-            printf("Unhandled websocket opcode %d from %p\n", opc, client_pcb);
         }
+
+        if (func == "get_wifi")
+        {
+            get_wifi(client.pcb());
+        }
+        else if (func == "scan_wifi")
+        {
+            printf("Scan WiFi\n");
+            scan_wifi(client.pcb());
+        }
+        else if (func == "config_update")
+        {
+            update_wifi(payload);
+        }
+        else if (message_callback_)
+        {
+            message_callback_(this, &client, payload);
+        }
+        break;
+
+    case WEBSOCKET_OPCODE_PING:
+        send_websocket(client.pcb(), WEBSOCKET_OPCODE_PONG, payload);
+        break;
+
+    case WEBSOCKET_OPCODE_CLOSE:
+        send_websocket(client.pcb(), WEBSOCKET_OPCODE_CLOSE, payload);
+        close_client(client.pcb());
+        break;
+
+    default:
+        printf("Unhandled websocket opcode %d from %p\n", opc, client.pcb());
     }
 }
 
@@ -618,7 +601,7 @@ void WEB::update_wifi(const std::string &cmd)
         std::string value = "";
         if (item.size() > 1)
         {
-            value = uri_decode(item.at(1));
+            value = HTTPRequest::uri_decode(item.at(1));
         }
         if (name == "hostname")
         {
@@ -771,24 +754,6 @@ void WEB::stop_ap()
     send_notice(AP_INACTIVE);
 }
 
-std::string WEB::uri_decode(const std::string &uri) const
-{
-    std::string ret;
-    char ch;
-    int i, ii;
-    for (i=0; i<uri.length(); i++)
-    {
-        if (uri[i]=='%') {
-            sscanf(uri.substr(i+1,2).c_str(), "%x", &ii);
-            ch=static_cast<char>(ii);
-            ret+=ch;
-            i=i+2;
-        } else {
-            ret+=uri[i];
-        }
-    }
-    return (ret);
-}
 
 
 
@@ -811,19 +776,13 @@ bool WEB::CLIENT::rqstIsReady()
     bool ret = false;
     if (!isWebSocket())
     {
-        ret = rqst_.find("\r\n\r\n") != std::string::npos;
+        ret = http_.parseRequest(rqst_);
     }
     else
     {
-        ret = getWSMessage();
+        ret = WS::ParsePacket(&wshdr_, rqst_) == WEBSOCKET_SUCCESS;
     }
     return ret;
-}
-
-bool WEB::CLIENT::getWSMessage()
-{
-    int sts = WS::ParsePacket(&wshdr_, rqst_);
-    return sts == WEBSOCKET_SUCCESS;
 }
 
 void WEB::CLIENT::queue_send(void *buffer, u16_t buflen, bool allocate)
@@ -869,14 +828,15 @@ void WEB::CLIENT::resetRqst()
     if (!isWebSocket())
     {
         std::size_t ii = rqst_.find("\r\n\r\n");
-        if (ii != std::string::npos)
+        if (http_.isComplete())
         {
-            rqst_.erase(0, ii + 4);
+            rqst_.erase(0, http_.size());
         }
         else
         {
             rqst_.clear();
         }
+        http_.clear();
     }
     else
     {
