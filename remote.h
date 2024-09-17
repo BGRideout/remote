@@ -19,10 +19,23 @@ private:
     static void ws_message_(WEB *web, void *client, const std::string &msg) { Remote::get()->ws_message(web, client, msg); }
 
     bool http_get(WEB *web, void *client, const HTTPRequest &rqst);
-    bool remote_page(WEB *web, void *client, const HTTPRequest &rqst);
+    bool http_post(WEB *web, void *client, const HTTPRequest &rqst);
+
+    bool remote_get(WEB *web, void *client, const HTTPRequest &rqst);
+    bool remote_button(WEB *web, void *client, const JSONMap &msgmap);
+    bool backup_get(WEB *web, void *client, const HTTPRequest &rqst);
+    bool backup_post(WEB *web, void *client, const HTTPRequest &rqst);
 
     static Remote *singleton_;
     Remote() {}
+
+    struct URLPROC
+    {
+        const char *url;
+        bool (Remote::* get)(WEB *web, void *client, const HTTPRequest &rqst);
+        bool (Remote::* post)(WEB *web, void *client, const HTTPRequest &rqst);
+    };
+    static struct URLPROC funcs[];   
 
 public:
     static Remote *get() { if (!singleton_) singleton_ = new Remote(); return singleton_; }

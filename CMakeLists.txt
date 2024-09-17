@@ -40,6 +40,7 @@ add_executable(${PROJECT_NAME}
 	web.cpp
 	httprequest.cpp
 	config.cpp
+	backup.cpp
 	${CMAKE_CURRENT_BINARY_DIR}/generated/web_files.cpp
 	)
 
@@ -59,7 +60,7 @@ pico_add_extra_outputs(${PROJECT_NAME})
 
 
 find_package (Python3 REQUIRED COMPONENTS Interpreter)
-set(WEB_RESOURCE_FILES data/backup.html data/backup.js data/config.html data/config.js
+set(WEB_RESOURCE_FILES data/index.html data/backup.html data/backup.js data/config.html data/config.js
     data/webremote.css data/webremote.js data/websocket.js data/favicon.ico data/icons.json
     ${CERTS})
 set(WEB_FILES_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")

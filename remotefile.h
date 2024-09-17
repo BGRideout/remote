@@ -111,9 +111,13 @@ private:
     JSONString              title_;             // Page title
     ButtonList              buttons_;           // Page buttons
     char                    *data_;             // File data
+    size_t                  datasize_;          // Data block size
+
+    bool load();
+    bool loadJSON(const json_t *json);
 
 public:
-    RemoteFile() : data_(nullptr) {}
+    RemoteFile() : data_(nullptr), datasize_(0) {}
     ~RemoteFile() { clear(); }
 
     const char *filename() const { return filename_.str(); }
@@ -173,8 +177,40 @@ public:
     bool changePosition(Button *button, int newpos);
 
     void clear();
+    bool loadForURL(const std::string &url);
     bool loadFile(const char *filename);
+    bool loadString(const std::string &data, const char *filename);
+    bool loadJSON(const json_t *json, const char *filename);
     void outputJSON(std::ostream &strm) const;
+
+    /**
+     * @brief   Enumerate the action files
+     * 
+     * @details Action files start with "action" or "menu_" and end with ".json"
+     * 
+     * @param   files       Vector to receive file names
+     * 
+     * @return  Count of files found
+     */
+    static int actionFiles(std::vector<std::string> &files);
+
+    /**
+     * @brief   Convert URL path to action file
+     * 
+     * @param   path        Path portion of URL
+     * 
+     * @return  action file name
+     */
+    static std::string urlToAction(const std::string &path);
+
+    /**
+     * @brief   Convert action file to URL
+     * 
+     * @param   file        File name
+     * 
+     * @return  URL path string (blank if invalid file name)
+     */
+    static std::string actionToURL(const std::string &file);
 };
 
 #endif

@@ -16,13 +16,10 @@
 #include "mbedtls/debug.h"
 #include "hardware/gpio.h"
 
-#define AP_ACTIVE_MINUTES 30
-#define AP_BUTTON 16
-
 WEB *WEB::singleton_ = nullptr;
 
 WEB::WEB() : server_(nullptr), wifi_state_(CYW43_LINK_DOWN),
-             ap_active_(0), ap_requested_(false), mdns_active_(false),
+             ap_active_(0), ap_requested_(0), mdns_active_(false),
              http_callback_(nullptr), message_callback_(nullptr), notice_callback_(nullptr)
 {
 }
@@ -103,7 +100,6 @@ bool WEB::init()
     altcp_accept(server_, tcp_server_accept);
     
     add_repeating_timer_ms(500, timer_callback, this, &timer_);
-    enable_ap_button();
 
     return true;
 }
@@ -558,9 +554,8 @@ void WEB::check_wifi()
             stop_ap();
         }
     }
-    if (ap_requested_)
+    if (ap_requested_ > 0)
     {
-        ap_requested_ = false;
         start_ap();
     }
 }
@@ -710,26 +705,13 @@ bool WEB::timer_callback(repeating_timer_t *rt)
     return true;
 }
 
-void WEB::enable_ap_button()
-{
-    gpio_init(AP_BUTTON);
-    gpio_set_dir(AP_BUTTON, false);
-    gpio_pull_up(AP_BUTTON);
-    gpio_set_irq_enabled_with_callback(AP_BUTTON, GPIO_IRQ_EDGE_RISE, true, &ap_button_callback);
-}
-
-void WEB::ap_button_callback(uint gpio, uint32_t event_mask)
-{
-    get()->ap_requested_ = true;
-}
-
 void WEB::start_ap()
 {
     if (ap_active_ == 0)
     {
-        printf("Starting AP webmouse\n");
-        cyw43_arch_enable_ap_mode("webmouse", "12345678", CYW43_AUTH_WPA2_AES_PSK);
-        netif_set_hostname(wifi_netif(CYW43_ITF_AP), "webmouse");
+        printf("Starting AP %s\n", ap_name_.c_str());
+        cyw43_arch_enable_ap_mode(ap_name_.c_str(), "12345678", CYW43_AUTH_WPA2_AES_PSK);
+        netif_set_hostname(wifi_netif(CYW43_ITF_AP), ap_name_.c_str());
     
         // Start the dhcp server
         ip4_addr_t addr;
@@ -742,7 +724,8 @@ void WEB::start_ap()
     {
         printf("AP is already active. Timer reset.\n");
     }
-    ap_active_ = AP_ACTIVE_MINUTES * 60 * 2;
+    ap_active_ = ap_requested_ * 60 * 2;
+    ap_requested_ = 0;
     send_notice(AP_ACTIVE);
 }
 

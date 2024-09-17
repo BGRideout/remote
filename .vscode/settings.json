@@ -53,6 +53,7 @@
         "map": "cpp",
         "set": "cpp",
         "istream": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "ctime": "cpp"
     }
 }

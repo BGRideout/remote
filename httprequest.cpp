@@ -5,7 +5,7 @@
 
 #include <string.h>
 
-bool HTTPRequest::parseRequest(const std::string &rqst)
+bool HTTPRequest::parseRequest(std::string &rqst, bool parsePostData)
 {
     clear();
     if (rqst.find("\r\n\r\n") != std::string::npos)
@@ -31,7 +31,11 @@ bool HTTPRequest::parseRequest(const std::string &rqst)
         if (body_size_ >= cl)
         {
             body_size_ = cl;
-            body_ = rqst.c_str() + body_offset_;
+            body_ = &rqst[body_offset_];
+            if (type() == "POST" && parsePostData)
+            {
+                get_post();
+            }
         }
     }
     return isComplete();
@@ -72,6 +76,13 @@ std::string HTTPRequest::path() const
     return ret.substr(0, i1);
 }
 
+std::string HTTPRequest::root() const
+{
+    std::string ret = path();
+    std::size_t i1 = ret.find('.');
+    return ret.substr(0, i1);
+}
+
 std::string HTTPRequest::query(const std::string &key) const
 {
     return std::string();
@@ -80,7 +91,7 @@ std::string HTTPRequest::query(const std::string &key) const
 int HTTPRequest::headerIndex(const std::string &name, int from) const
 {
     int ret = -1;
-    for (int ii = 1; ii < headers_.size(); ii++)
+    for (int ii = from; ii < headers_.size(); ii++)
     {
         std::size_t i1 = headers_.at(ii).find(':');
         if (i1 != std::string::npos)
@@ -116,33 +127,72 @@ std::string HTTPRequest::header(const std::string &name) const
     return header(index).second;
 }
 
-bool HTTPRequest::postData(std::multimap<std::string, std::string> &data) const
+std::string HTTPRequest::cookie(const std::string &name, const std::string &defval) const
+{
+    std::string ret(defval);
+    bool found = false;
+    int index = headerIndex("Cookie");
+    while (!found && index > 0)
+    {
+        std::pair<std::string, std::string> hdr = header(index);
+        std::size_t i1 = 0;
+        std::size_t i2 = hdr.second.find('=', i1);
+        while (!found && i1 < hdr.second.length() && i2 != std::string::npos)
+        {
+            i2 += 1;
+            std::size_t i3 = hdr.second.find("; ", i2);
+            std::size_t ll = i3 != std::string::npos ? i3 - i2 : hdr.second.length() - i2;
+            if (i2 - i1 - 1 == name.length() && strncasecmp(hdr.second.c_str() + i1, name.c_str(), i2 - i1 - 1) == 0)
+            {
+                ret = hdr.second.substr(i2, ll);
+                found = true;
+            }
+            i1 = i2 + ll + 2;
+            i2 = hdr.second.find('=', i1);
+        }
+        index = headerIndex("Cookie", index + 1);
+    }
+
+    return ret;
+}
+
+bool HTTPRequest::parsePost()
+{
+    if (post_data_.size() > 0)
+    {
+        return true;
+    }
+    return get_post();
+}
+
+bool HTTPRequest::get_post()
 {
     bool ret = false;
-    data.clear();
+    post_data_.clear();
 
     std::string content_type = header("Content-Type");
     if (content_type == "application/x-www-form-urlencoded")
     {
-        ret = get_post_urlencoded(data);
+        ret = get_post_urlencoded();
     }
     else if (content_type.find("multipart/form-data") != std::string::npos)
     {
-        ret = get_post_multipart(content_type, data);
+        ret = get_post_multipart(content_type);
     }
     return ret;
 }
 
-bool HTTPRequest::get_post_urlencoded(std::multimap<std::string, std::string> &data) const
+bool HTTPRequest::get_post_urlencoded()
 {
     bool ret = true;
     std::string key;
     std::string value;
-    const char *ptr = body_;
-    const char *end = body_ + body_size_;
+    char *valptr;
+    char *ptr = body_;
+    char *end = body_ + body_size_;
     while (ptr < end)
     {
-        const char *cp = ptr;
+        char *cp = ptr;
         while (cp < end && *cp != '=') cp++;
         if (cp < end)
         {
@@ -153,13 +203,15 @@ bool HTTPRequest::get_post_urlencoded(std::multimap<std::string, std::string> &d
                 cp = ptr;
                 while (cp < end && *cp != '&') cp++;
                 value = uri_decode(std::string(ptr, cp - ptr));
+                memcpy(ptr, value.c_str(), value.length() + 1);
+                valptr = ptr;
                 ptr = cp + 1;
             }
             else
             {
                 value.clear();
             }
-            data.insert(std::pair<std::string, std::string>(key, value));
+            post_data_.insert(std::pair<std::string, const char *>(key, valptr));
         }
         else
         {
@@ -169,7 +221,7 @@ bool HTTPRequest::get_post_urlencoded(std::multimap<std::string, std::string> &d
     return ret;
 }
 
-bool HTTPRequest::get_post_multipart(std::string &content_type, std::multimap<std::string, std::string> &data) const
+bool HTTPRequest::get_post_multipart(std::string &content_type)
 {
     bool ret = false;
     std::string boundary;
@@ -186,9 +238,9 @@ bool HTTPRequest::get_post_multipart(std::string &content_type, std::multimap<st
     {
         ret = true;
         boundary.insert(0, "--");
-        const char *ptr = body_;
-        const char *end = body_ + body_size_;
-        const char *cp;
+        char *ptr = body_;
+        char *end = body_ + body_size_;
+        char *cp;
         std::string key;
         std::string value;
         std::string line;
@@ -210,6 +262,7 @@ bool HTTPRequest::get_post_multipart(std::string &content_type, std::multimap<st
             cp = ptr;
             while (cp < end && *cp != '\r') cp++;
             line = std::string(ptr, cp - ptr);
+            char *lp = ptr;
             ptr = cp + 1 < end ? cp + 2 : end;
             while (ptr < end && !line.empty())
             {
@@ -232,29 +285,28 @@ bool HTTPRequest::get_post_multipart(std::string &content_type, std::multimap<st
                         i2 = line.find('"', i1);
                         if (i2 != std::string::npos)
                         {
-                            std::string filename = line.substr(i1, i2 - i1);
-                            data.insert(std::pair<std::string, std::string>(key + ".filename", filename));
+                            lp[i2] = '\0';
+                            post_data_.insert(std::pair<std::string, const char *>(key + ".filename", lp + i1));
                         }
                     }
                 }
                 cp = ptr;
                 while (cp < end && *cp != '\r') cp++;
                 line = std::string(ptr, cp - ptr);
+                lp = ptr;
                 ptr = cp + 1 < end ? cp + 2 : end;
             }
 
-            value.clear();
+            char *value = ptr;
             while (ptr < end)
             {
                 cp = ptr;
                 while (cp < end && *cp != '\r' && *(cp + 1) == '\n') cp++;
-                value += std::string(ptr, cp - ptr + 1);
                 ptr = cp < end ? cp + 1 : end;
                 if (strncmp(ptr, boundary.c_str(), boundary.length()) == 0)
                 {
-                    value.pop_back();
-                    value.pop_back();
-                    data.insert(std::pair<std::string, std::string>(key, value));
+                    *(ptr - 2) = '\0';
+                    post_data_.insert(std::pair<std::string, const char *>(key, value));
                     cp = ptr;
                     while (cp < end && *cp != '\r') cp++;
                     line = std::string(ptr, cp - ptr);
@@ -267,6 +319,17 @@ bool HTTPRequest::get_post_multipart(std::string &content_type, std::multimap<st
     return ret;
 }
 
+const char *HTTPRequest::postValue(const std::string &key) const
+{
+    const char *ret = nullptr;
+    auto it = post_data_.equal_range(key);
+    if (it.first != post_data_.cend())
+    {
+        ret = it.first->second;
+    }
+    return ret;
+}
+
 std::string HTTPRequest::uri_decode(const std::string &uri)
 {
     std::string ret;
@@ -274,12 +337,18 @@ std::string HTTPRequest::uri_decode(const std::string &uri)
     int i, ii;
     for (i=0; i<uri.length(); i++)
     {
-        if (uri[i]=='%') {
-            sscanf(uri.substr(i+1,2).c_str(), "%x", &ii);
-            ch=static_cast<char>(ii);
-            ret+=ch;
-            i=i+2;
-        } else {
+        if (uri[i] == '%') {
+            sscanf(uri. substr(i+1,2).c_str(), "%x", &ii);
+            ch = static_cast<char>(ii);
+            ret += ch;
+            i = i + 2;
+        }
+        else if (uri[i] == '+')
+        {
+            ret += ' ';
+        }
+        else
+        {
             ret+=uri[i];
         }
     }

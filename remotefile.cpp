@@ -1,7 +1,9 @@
 //                  *****  RemoteFile Implementation  *****
 
 #include "remotefile.h"
+#include "txt.h"
 #include <algorithm>
+#include <dirent.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -14,6 +16,18 @@ void RemoteFile::clear()
     buttons_.clear();
     if (data_) delete [] data_;
     data_ = nullptr;
+    datasize_ = 0;
+}
+
+bool RemoteFile::loadForURL(const std::string &url)
+{
+    std::string actfile = urlToAction(url);
+    bool ret = actfile == filename_.str();
+    if (!ret)
+    {
+        ret = loadFile(actfile.c_str());
+    }
+    return ret;
 }
 
 bool RemoteFile::loadFile(const char *filename)
@@ -27,41 +41,72 @@ bool RemoteFile::loadFile(const char *filename)
         filename_ = filename;
         struct stat sb;
         stat(filename, &sb);
-        data_ = new char[sb.st_size + 1];
-        fread(data_, sb.st_size, 1, f);
-        data_[sb.st_size] = 0;
+        datasize_ = sb.st_size;
+        data_ = new char[datasize_ + 1];
+        fread(data_, datasize_, 1, f);
+        data_[datasize_] = 0;
         fclose(f);
+        printf("%s file data:\n%s\n", filename, data_);
+        ret = load();
+    }
+    return ret;
+}
 
-        json_t jbuf[sb.st_size / 4];
-        json_t const* json = json_create(data_, jbuf, sizeof jbuf / sizeof *jbuf );
-        if (json)
+bool RemoteFile::loadString(const std::string &data, const char *filename)
+{
+    clear();
+    filename_ = filename;
+    datasize_ = data.length();
+    data_ = new char[datasize_ + 1];
+    memcpy(data_, data.c_str(), datasize_ + 1);
+    return load();
+}
+
+bool RemoteFile::loadJSON(const json_t *json, const char *filename)
+{
+    clear();
+    filename_ = filename;
+    return loadJSON(json);
+}
+
+bool RemoteFile::load()
+{
+    bool ret = false;
+    json_t jbuf[datasize_ / 4];
+    json_t const* json = json_create(data_, jbuf, sizeof jbuf / sizeof *jbuf );
+    if (json)
+    {
+        ret = loadJSON(json);
+    }
+    return ret;
+}
+
+bool RemoteFile::loadJSON(const json_t *json)
+{
+    bool ret = true;
+    const json_t *t = json_getProperty(json, "title");
+    title_ = t;
+
+    json_t const *buttons = json_getProperty(json, "buttons");
+    if (buttons && json_getType(buttons) == JSON_ARRAY)
+    {
+        int nb = 0;
+        for (json_t const *button = json_getChild(buttons); button != nullptr; button = json_getSibling(button))
         {
-            ret = true;
-            const json_t *t = json_getProperty(json, "title");
-            title_ = t;
-
-            json_t const *buttons = json_getProperty(json, "buttons");
-            if (buttons && json_getType(buttons) == JSON_ARRAY)
+            nb++;
+        }
+        buttons_.reserve(nb);
+        for (json_t const *button = json_getChild(buttons); ret && button != nullptr; button = json_getSibling(button))
+        {
+            json_t const *pos = json_getProperty(button, "pos");
+            if (pos)
             {
-                int nb = 0;
-                for (json_t const *button = json_getChild(buttons); button != nullptr; button = json_getSibling(button))
+                int position = json_getInteger(pos);
+                if (position > 0 && !getButton(position))
                 {
-                    nb++;
-                }
-                buttons_.reserve(nb);
-                for (json_t const *button = json_getChild(buttons); ret && button != nullptr; button = json_getSibling(button))
-                {
-                    json_t const *pos = json_getProperty(button, "pos");
-                    if (pos)
-                    {
-                        int position = json_getInteger(pos);
-                        if (position > 0 && !getButton(position))
-                        {
-                            auto i1 = std::lower_bound(buttons_.begin(), buttons_.end(), Button(position));
-                            auto i2 = buttons_.emplace(i1, Button());
-                            ret = i2->loadFromJSON(button);
-                        }
-                    }
+                    auto i1 = std::lower_bound(buttons_.begin(), buttons_.end(), Button(position));
+                    auto i2 = buttons_.emplace(i1, Button());
+                    ret = i2->loadFromJSON(button);
                 }
             }
         }
@@ -72,7 +117,7 @@ bool RemoteFile::loadFile(const char *filename)
 void RemoteFile::outputJSON(std::ostream &strm) const
 {
     strm << "{\"title\":\"" << title() << "\",\n"
-         << "\"buttons:\":[";
+         << "\"buttons\":[";
     std::string sep("\n");
     for (auto it = buttons_.cbegin(); it != buttons_.cend(); ++it)
     {
@@ -341,4 +386,61 @@ void RemoteFile::Button::Action::clear()
     address_ = 0;
     value_ = 0;
     delay_ = 0;
+}
+
+
+//                  ***** RemoteFile Static Members  *****
+
+int RemoteFile::actionFiles(std::vector<std::string> &files)
+{
+    files.clear();
+    DIR *dir = opendir("/");
+    if (dir)
+    {
+        std::string file;
+        struct dirent *ent = readdir(dir);
+        while (ent)
+        {
+            file = ent->d_name;
+            if (file.length() >= 10 &&
+                (file.substr(0, 7) == "actions" || file.substr(0, 5) == "menu_") &&
+                file.substr(file.length() - 5) == ".json")
+            {
+                files.push_back(file);
+            }
+            ent = readdir(dir);
+        }
+    }
+    return files.size();
+}
+
+std::string RemoteFile::urlToAction(const std::string &path)
+{
+    std::string ret("actions");
+    std::string lpath(path);
+    if (lpath.at(0) == '/') lpath.erase(0, 1);
+    std::size_t i1 = lpath.rfind('.');
+    if (i1 != std::string::npos) lpath.erase(i1);
+    bool index = lpath.empty() || lpath == "index";
+    if (!index)
+    {
+        while(TXT::substitute(lpath, "/", "_"));
+        ret += "_" + lpath;
+    }
+    ret += ".json";
+    return ret;
+}
+
+std::string RemoteFile::actionToURL(const std::string &file)
+{
+    std::size_t i1 = file.find("actions");
+    std::size_t i2 = file.rfind(".json");
+    if (i1 != std::string::npos && i2 != std::string::npos && i1 + 7 <= i2)
+    {
+        i1 += 7;
+        std::vector<std::string> tokens;
+        TXT::split(file.substr(i1, i2 - i1), "_", tokens);
+        return "/" + TXT::join(tokens, "/");
+    }
+    return std::string();
 }

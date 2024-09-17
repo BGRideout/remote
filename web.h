@@ -111,12 +111,11 @@ private:
     repeating_timer_t timer_;
     static bool timer_callback(repeating_timer_t *rt);
 
+    std::string ap_name_;
     int  ap_active_;
-    bool ap_requested_;
+    int  ap_requested_;
     bool mdns_active_;
     dhcp_server_t dhcp_;
-    void enable_ap_button();
-    static void ap_button_callback(uint gpio, uint32_t event_mask);
     void start_ap();
     void stop_ap();
 
@@ -150,6 +149,9 @@ public:
 
     bool send_data(void *client, const char *data, u16_t datalen, bool allocate=true);
     bool send_message(void *client, const std::string &message);
+
+    void enable_ap(int minutes = 30, const std::string &name = "webapp") { ap_requested_ = minutes; ap_name_ = name; }
+    bool ap_active() const { return ap_active_ > 0; }
 };
 
 #endif
