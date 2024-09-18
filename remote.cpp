@@ -1,5 +1,6 @@
 #include "remote.h"
 #include "remotefile.h"
+#include "command.h"
 #include "txt.h"
 #include "config.h"
 #include "web.h"
@@ -32,6 +33,12 @@ struct Remote::URLPROC Remote::funcs[] =
 
 bool Remote::init()
 {
+    queue_init(&exec_queue_, sizeof(Command *), 8);
+    queue_init(&resp_queue_, sizeof(Command *), 8);
+
+    worker_.do_work = get_replies;
+    async_context_add_when_pending_worker(cyw43_arch_async_context(), &worker_);
+    
     WEB *web = WEB::get();
     web->set_http_callback(get()->http_message_);
     web->set_message_callback(get()->ws_message_);
@@ -58,6 +65,24 @@ bool Remote::init()
     return ret;
 }
 
+Remote::~Remote()
+{
+    async_context_remove_when_pending_worker(cyw43_arch_async_context(), &worker_);
+
+    Command *cmdptr;
+    while (queue_try_remove(&exec_queue_, &cmdptr))
+    {
+        delete cmdptr;
+    }
+    queue_free(&exec_queue_);
+
+    while (queue_try_remove(&resp_queue_, &cmdptr))
+    {
+        delete cmdptr;
+    }
+    queue_free(&resp_queue_);
+}
+
 bool Remote::http_message(WEB *web, void *client, const HTTPRequest &rqst)
 {
     bool ret = false;
@@ -75,7 +100,6 @@ bool Remote::http_message(WEB *web, void *client, const HTTPRequest &rqst)
 
 void Remote::ws_message(WEB *web, void *client, const std::string &msg)
 {
-    printf("Message: %s\n", msg.c_str());
     JSONMap msgmap(msg.c_str());
     if (msgmap.hasProperty("btnVal"))
     {
@@ -91,7 +115,6 @@ bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst)
 {
     bool ret = false;
     std::string url = rqst.path();
-    printf("GET %s\n", url.c_str());
     bool found = false;
     url = rqst.root();
     for (int ii = 0; ii < count_of(funcs); ii++)
@@ -266,57 +289,21 @@ bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst)
 
 bool Remote::remote_button(WEB *web, void *client, const JSONMap &msgmap)
 {
+    bool ret = false;
     printf("btnVal = %d, action = %s path = %s duration = %f\n",
         msgmap.intValue("btnVal"), msgmap.strValue("action"), msgmap.strValue("path"), msgmap.realValue("duration"));
 
     int button = msgmap.intValue("btnVal");
-    std::string action = msgmap.strValue("action", "");
     std::string url = msgmap.strValue("path");
-    double duration = msgmap.realValue("duration");
-
-    JSONMap::JMAP jmap;
-    jmap["button"] = std::to_string(button);
-    jmap["action"] = action;
-    jmap["url"] = url;
-    jmap["redirect"] = "";
-
     rfile_.loadForURL(url);
     RemoteFile::Button *btn = rfile_.getButton(button);
-    printf("button %p\n", btn);
     if (btn)
     {
-        std::string red(btn->redirect());
-        if (red.length() > 0 && red.at(0) != '/')
-        {
-            red.insert(0, "/");
-        }
-        jmap["redirect"] = red;
+        ret = true;
+        Command *cmd = new Command(web, client, msgmap, btn);
+        queue_command(cmd);
     }
-
-    if (action == "click")
-    {
-        ;
-    }
-    else if (action == "press")
-    {
-        if (true)
-        {
-            ;
-        }
-        else
-        {
-            jmap["action"] = "no-repeat";
-        }
-    }
-    else if (action == "release" || action == "cancel")
-    {
-        ;
-    }
-    std::string resp;
-    JSONMap::fromMap(jmap, resp);
-    printf("response: %s\n", resp.c_str());
-    web->send_message(client, resp);
-    return true;
+    return ret;
 }
 
 bool Remote::backup_get(WEB *web, void *client, const HTTPRequest &rqst)
@@ -360,13 +347,6 @@ bool Remote::backup_get(WEB *web, void *client, const HTTPRequest &rqst)
 bool Remote::backup_post(WEB *web, void *client, const HTTPRequest &rqst)
 {
     bool ret = false;
-    const HTTPRequest::PostData &data = rqst.postData();
-    printf("Post data[%d]\n", data.size());
-    for (auto it = data.cbegin(); it != data.cend(); ++it)
-    {
-        printf("%s=%s\n", it->first.c_str(), it->second);
-    }
-
     std::string msg("Success");
     std::string button = rqst.postValue("button");
     if (button == "upload")
@@ -392,6 +372,45 @@ bool Remote::backup_post(WEB *web, void *client, const HTTPRequest &rqst)
     return ret;
 }
 
+bool Remote::queue_command(const Command *cmd)
+{
+    bool ret = queue_try_add(&exec_queue_, &cmd);
+    printf("Command %p queued status=%d\n", cmd, ret);
+    return ret;
+}
+
+Command *Remote::getNextCommand()
+{
+    Command *ret = nullptr;
+    if (!queue_try_remove(&exec_queue_, &ret))
+    {
+        ret = nullptr;
+    }
+    return ret;
+}
+
+void Remote::commandReply(Command *command)
+{
+    queue_try_add(&resp_queue_, &command);
+    async_context_set_work_pending(cyw43_arch_async_context(), &worker_);
+}
+
+void Remote::get_replies(async_context_t *context, async_when_pending_worker_t *worker)
+{
+    get()->get_replies();
+}
+
+void Remote::get_replies()
+{
+    Command *cmd = nullptr;
+    while (queue_try_remove(&resp_queue_, &cmd))
+    {
+        printf("Reply: %s\n", cmd->reply().c_str());
+        cmd->web()->send_message(cmd->client(), cmd->reply());
+        delete cmd;
+    }
+}
+
 int main ()
 {
     stdio_init_all();
@@ -414,43 +433,14 @@ int main ()
 
     Remote::get()->init();
 
-    // RemoteFile rfile;
-    // if (rfile.loadFile("actions.json"))
-    // {
-    //     printf("%s : %s\n", rfile.filename(), rfile.title());
-    //     const RemoteFile::ButtonList &btns = rfile.buttons();
-    //     for (auto it = btns.cbegin(); it != btns.cend(); ++it)
-    //     {
-    //         const RemoteFile::Button &btn = *it;
-    //         printf("%d %s %s %s %d\n", btn.position(), btn.label(), btn.color(), btn.redirect(), btn.repeat());
-    //         const RemoteFile::Button::ActionList &acts = btn.actions();
-    //         for (auto i2 = acts.cbegin(); i2 != acts.cend(); ++i2)
-    //         {
-    //             printf("  %s %d %d %d\n", i2->type(), i2->address(), i2->value(), i2->delay());
-    //             sleep_ms(10);
-    //         }
-    //     }
-
-        
-    //     RemoteFile::Button *btn = rfile.addButton(30, "Cast", "LightMagenta", "", 0);;
-    //     if (btn)
-    //     {
-    //         btn->clearActions();
-    //         btn->addAction("bogus", 1, 2, 3);
-    //     }
-
-    //     rfile.deleteButton(31);
-
-    //     rfile.changePosition(rfile.getButton(18), 19);
-
-    //     std::stringstream out;
-    //     rfile.outputJSON(out);
-    //     printf("%s", out.str().c_str());
-    // }
-
     while (true)
     {
-        ;
+        Command *cmd = Remote::get()->getNextCommand();
+        if (cmd)
+        {
+            cmd->execute();
+            Remote::get()->commandReply(cmd);
+        }
     }
 
     return 0;

@@ -288,7 +288,7 @@ err_t WEB::write_next(altcp_pcb *client_pcb)
 void WEB::process_rqst(CLIENT &client)
 {
     bool ok = false;
-    printf("Request:\n%s\n", client.rqst().c_str());
+    //printf("Request:\n%s\n", client.rqst().c_str());
     if (!client.isWebSocket())
     {
         ok = true;
@@ -434,7 +434,7 @@ void WEB::process_websocket(CLIENT &client)
 bool WEB::send_message(void *client, const std::string &message)
 {
     CLIENT *clptr = (CLIENT *)client;
-    printf("%p message: %s\n", clptr->pcb(), message.c_str());
+    //printf("%p message: %s\n", clptr->pcb(), message.c_str());
     send_websocket(clptr->pcb(), WEBSOCKET_OPCODE_TEXT, message);
     return true;
 }

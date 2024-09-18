@@ -46,7 +46,6 @@ bool RemoteFile::loadFile(const char *filename)
         fread(data_, datasize_, 1, f);
         data_[datasize_] = 0;
         fclose(f);
-        printf("%s file data:\n%s\n", filename, data_);
         ret = load();
     }
     return ret;
