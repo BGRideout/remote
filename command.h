@@ -12,7 +12,7 @@ class WEB;
 
 class Command
 {
-private:
+public:
     class Step
     {
     private:
@@ -21,8 +21,9 @@ private:
         int             value_;             // Value
         int             delay_;             // Post action delay (msec)
 
-    public:
         Step() : address_(0), value_(0), delay_(0) {}
+
+    public:
         Step(const RemoteFile::Button::Action &act)
          : type_(act.type()), address_(act.address()), value_(act.value()), delay_(act.delay()) {}
 
@@ -32,6 +33,7 @@ private:
         int delay() const { return delay_; }
     };
 
+private:
     WEB                 *web_;              // Pointer to web object
     void                *client_;           // Pointer to web client
 
@@ -46,18 +48,28 @@ private:
 
     std::string         reply_;             // Reply string
 
+    static int          count_;             // Instance count
+
     Command();
-    Command(const Command &other);
 
 public:
     Command(WEB *web, void *client, const JSONMap &msgmap, const RemoteFile::Button *button);
-    ~Command() {}
-
-    void execute();
+    Command(const Command &other);
+    ~Command();
 
     WEB *web() const { return web_; }
     void *client() const { return client_; }
+    int button() const { return button_; }
+    const std::string &action() const { return action_; }
+    const std::string &url() const { return url_; }
+    const double duration() const { return duration_; }
+    const std::string &redirect() const { return redirect_; }
+    int repeat() const { return repeat_; }
+    const std::vector<Step> &steps() { return steps_; }
     const std::string &reply() const { return reply_; }
+
+    void setRepeat(int repeat) { repeat_ = repeat; }
+    void setReply(const std::string &action);
 };
 
 #endif

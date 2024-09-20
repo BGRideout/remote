@@ -35,6 +35,7 @@ add_subdirectory(../picolibs picolibs)
 add_executable(${PROJECT_NAME} 
     remote.cpp
 	remotefile.cpp
+	irprocessor.cpp
 	command.cpp
 	jsonstring.cpp
 	jsonmap.cpp

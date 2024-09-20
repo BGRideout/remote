@@ -17,6 +17,7 @@
 #include "hardware/gpio.h"
 
 WEB *WEB::singleton_ = nullptr;
+int WEB::debug_level_ = 0;
 
 WEB::WEB() : server_(nullptr), wifi_state_(CYW43_LINK_DOWN),
              ap_active_(0), ap_requested_(0), mdns_active_(false),
@@ -120,12 +121,15 @@ err_t WEB::tcp_server_accept(void *arg, struct altcp_pcb *client_pcb, err_t err)
         return ERR_VAL;
     }
     web->clients_.insert(std::pair<struct altcp_pcb *, WEB::CLIENT>(client_pcb, WEB::CLIENT(client_pcb)));
-    printf("Client connected %p (%d clients)\n", client_pcb, web->clients_.size());
-    // for (auto it = web->clients_.cbegin(); it != web->clients_.cend(); ++it)
-    // {
-    //     printf(" %c-%p", it->second.isWebSocket() ? 'w' : 'h', it->first);
-    // }
-    // if (web->clients_.size() > 0) printf("\n");
+    if (isDebug(1)) printf("Client connected %p (%d clients)\n", client_pcb, web->clients_.size());
+    if (isDebug(2))
+    {
+        for (auto it = web->clients_.cbegin(); it != web->clients_.cend(); ++it)
+        {
+            printf(" %c-%p", it->second.isWebSocket() ? 'w' : 'h', it->first);
+        }
+        if (web->clients_.size() > 0) printf("\n");
+    }
 
     altcp_arg(client_pcb, client_pcb);
     altcp_sent(client_pcb, tcp_server_sent);
@@ -211,7 +215,7 @@ err_t WEB::tcp_server_poll(void *arg, struct altcp_pcb *tpcb)
         {
             if (ci->second.more_to_send())
             {
-                printf("Sending to %p on poll (%d clients)\n", ci->first, web->clients_.size());
+                if (isDebug(1)) printf("Sending to %p on poll (%d clients)\n", ci->first, web->clients_.size());
                 web->write_next(ci->first);
             }
         }
@@ -288,7 +292,7 @@ err_t WEB::write_next(altcp_pcb *client_pcb)
 void WEB::process_rqst(CLIENT &client)
 {
     bool ok = false;
-    //printf("Request:\n%s\n", client.rqst().c_str());
+    if (isDebug(3)) printf("Request:\n%s\n", client.rqst().c_str());
     if (!client.isWebSocket())
     {
         ok = true;
@@ -299,6 +303,10 @@ void WEB::process_rqst(CLIENT &client)
         }
         else
         {
+            if (client.http().type() == "POST")
+            {
+                client.http().parseRequest(client.rqst(), true);
+            }
             process_http_rqst(client);
         }
     }
@@ -338,7 +346,7 @@ bool WEB::send_data(void *client, const char *data, u16_t datalen, bool allocate
 
 void WEB::open_websocket(CLIENT &client)
 {
-    printf("Accepting websocket connection on %p\n", client.pcb());
+    if (isDebug(1)) printf("Accepting websocket connection on %p\n", client.pcb());
     std::string host = client.http().header("Host");
     std::string key = client.http().header("Sec-WebSocket-Key");
     
@@ -404,7 +412,7 @@ void WEB::process_websocket(CLIENT &client)
         }
         else if (func == "scan_wifi")
         {
-            printf("Scan WiFi\n");
+            if (isDebug(1)) printf("Scan WiFi\n");
             scan_wifi(client.pcb());
         }
         else if (func == "config_update")
@@ -434,7 +442,7 @@ void WEB::process_websocket(CLIENT &client)
 bool WEB::send_message(void *client, const std::string &message)
 {
     CLIENT *clptr = (CLIENT *)client;
-    //printf("%p message: %s\n", clptr->pcb(), message.c_str());
+    if (isDebug(3)) printf("%p message: %s\n", clptr->pcb(), message.c_str());
     send_websocket(clptr->pcb(), WEBSOCKET_OPCODE_TEXT, message);
     return true;
 }
@@ -468,17 +476,21 @@ void WEB::close_client(struct altcp_pcb *client_pcb, bool isClosed)
             if (!ci->second.more_to_send())
             {
                 altcp_close(client_pcb);
-                printf("Closed %s %p. client count = %d\n", (ci->second.isWebSocket() ? "ws" : "http"), client_pcb, clients_.size() - 1);
+                if (isDebug(1)) printf("Closed %s %p. client count = %d\n",
+                                    (ci->second.isWebSocket() ? "ws" : "http"), client_pcb, clients_.size() - 1);
                 clients_.erase(ci);
-                // for (auto it = clients_.cbegin(); it != clients_.cend(); ++it)
-                // {
-                //     printf(" %c-%p", it->second.isWebSocket() ? 'w' : 'h', it->first);
-                // }
-                // if (clients_.size() > 0) printf("\n");
+                if (isDebug(2))
+                {
+                    for (auto it = clients_.cbegin(); it != clients_.cend(); ++it)
+                    {
+                        printf(" %c-%p", it->second.isWebSocket() ? 'w' : 'h', it->first);
+                    }
+                    if (clients_.size() > 0) printf("\n");
+                }
             }
             else
             {
-                printf("Waiting to close %s %p\n", (ci->second.isWebSocket() ? "ws" : "http"), client_pcb);
+                if (isDebug(1)) printf("Waiting to close %s %p\n", (ci->second.isWebSocket() ? "ws" : "http"), client_pcb);
             }
         }
         else
@@ -669,10 +681,10 @@ void WEB::check_scan_finished()
     if (scans_.size() > 0 && !cyw43_wifi_scan_active(&cyw43_state))
     {
         std::string msg("{\"ssids\":\"<option value=''>-- Choose WiFi access point --</option>");
-        printf("Scan finished (%d):\n", ssids_.size());
+        if (isDebug(1)) printf("Scan finished (%d):\n", ssids_.size());
         for (auto it = ssids_.cbegin(); it != ssids_.cend(); ++it)
         {
-            printf("  %s\n", it->first.c_str());
+            if (isDebug(1)) printf("  %s\n", it->first.c_str());
             msg += "<option value='";
             msg += it->first.c_str();
             msg += "'>";
@@ -759,7 +771,7 @@ bool WEB::CLIENT::rqstIsReady()
     bool ret = false;
     if (!isWebSocket())
     {
-        ret = http_.parseRequest(rqst_);
+        ret = http_.parseRequest(rqst_, false);
     }
     else
     {

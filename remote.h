@@ -8,6 +8,7 @@
 #include "web.h"
 #include "pico/cyw43_arch.h"
 #include <pico/util/queue.h>
+#include <pico/async_context.h>
 
 class Command;
 

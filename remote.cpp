@@ -1,5 +1,6 @@
 #include "remote.h"
 #include "remotefile.h"
+#include "irprocessor.h"
 #include "command.h"
 #include "txt.h"
 #include "config.h"
@@ -37,6 +38,7 @@ bool Remote::init()
     queue_init(&resp_queue_, sizeof(Command *), 8);
 
     worker_.do_work = get_replies;
+    worker_.user_data = this;
     async_context_add_when_pending_worker(cyw43_arch_async_context(), &worker_);
     
     WEB *web = WEB::get();
@@ -375,7 +377,6 @@ bool Remote::backup_post(WEB *web, void *client, const HTTPRequest &rqst)
 bool Remote::queue_command(const Command *cmd)
 {
     bool ret = queue_try_add(&exec_queue_, &cmd);
-    printf("Command %p queued status=%d\n", cmd, ret);
     return ret;
 }
 
@@ -397,7 +398,8 @@ void Remote::commandReply(Command *command)
 
 void Remote::get_replies(async_context_t *context, async_when_pending_worker_t *worker)
 {
-    get()->get_replies();
+    Remote *self = static_cast<Remote *>(worker->user_data);
+    self->get_replies();
 }
 
 void Remote::get_replies()
@@ -433,15 +435,8 @@ int main ()
 
     Remote::get()->init();
 
-    while (true)
-    {
-        Command *cmd = Remote::get()->getNextCommand();
-        if (cmd)
-        {
-            cmd->execute();
-            Remote::get()->commandReply(cmd);
-        }
-    }
+    IR_Processor *ir = new IR_Processor(Remote::get(), 18, 16);
+    ir->run();
 
     return 0;
 }

@@ -66,6 +66,7 @@ private:
         std::string &rqst() { return rqst_; }
         const std::string &rqst() const { return rqst_; }
         const HTTPRequest &http() const { return http_; }
+        HTTPRequest &http() { return http_; }
         const WebsocketPacketHeader_t &wshdr() const { return wshdr_; }
 
         struct altcp_pcb *pcb() const { return pcb_; }
@@ -120,6 +121,9 @@ private:
     void stop_ap();
 
     static struct netif *wifi_netif(int ift) { return &cyw43_state.netif[ift]; }
+
+    static int debug_level_;                               // Debug level
+    static bool isDebug(int level = 1) { return level <= debug_level_; }
     
     static WEB          *singleton_;                // Singleton pointer
     WEB();
@@ -152,6 +156,8 @@ public:
 
     void enable_ap(int minutes = 30, const std::string &name = "webapp") { ap_requested_ = minutes; ap_name_ = name; }
     bool ap_active() const { return ap_active_ > 0; }
+
+    void setDebug(int level) { debug_level_ = level; }
 };
 
 #endif

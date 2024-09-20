@@ -2,7 +2,8 @@
 
 #include "command.h"
 #include <stdio.h>
-#include <pico/stdlib.h>
+
+int Command::count_ = 0;
 
 Command::Command(WEB *web, void *client, const JSONMap &msgmap, const RemoteFile::Button *button)
     :web_(web), client_(client)
@@ -18,39 +19,38 @@ Command::Command(WEB *web, void *client, const JSONMap &msgmap, const RemoteFile
     {
         steps_.emplace_back(*it);
     }
+
+    ++count_;
+    //printf("Command count: %d (new)  %p\n", count_, this);
 }
 
-void Command::execute()
+Command::Command(const Command &other)
 {
+    web_ = other.web_;
+    client_ = other.client_;
+    button_ = other.button_;
+    action_ = other.action_;
+    url_ = other.url_;
+    duration_ = other.duration_;
+    redirect_ = other.redirect_;
+    repeat_ = other.repeat_;
+    steps_ = other.steps_;
+    reply_ = other.reply_;
+    ++count_;
+    //printf("Command count: %d (copy) %p\n", count_, this);
+}
 
-    if (action_ == "click")
-    {
-    }
-    else if (action_ == "press")
-    {
-        if (true)
-        {
-            ;
-        }
-        else
-        {
-            ;
-        }
-    }
-    else if (action_ == "release" || action_ == "cancel")
-    {
-        ;
-    }
+Command::~Command()
+{
+    --count_;
+    //printf("Command count: %d (des)  %p\n", count_, this);
+}
 
-    for (auto it = steps_.cbegin(); it != steps_.cend(); ++it)
-    {
-        printf("Step: '%s' %d %d %d\n", it->type().c_str(), it->address(), it->value(), it->delay());
-        sleep_ms(50 + it->delay());
-    }
-
+void Command::setReply(const std::string &action)
+{
     JSONMap::JMAP jmap;
     jmap["button"] = std::to_string(button_);
-    jmap["action"] = action_;
+    jmap["action"] = action;
     jmap["url"] = url_;
 
     std::string red(redirect_);
@@ -61,5 +61,4 @@ void Command::execute()
     jmap["redirect"] = red;
 
     JSONMap::fromMap(jmap, reply_);
-    printf("response: %s\n", reply_.c_str());
 }
