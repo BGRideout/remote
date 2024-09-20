@@ -214,11 +214,12 @@ bool IR_Processor::cancel_repeat()
     bool ret = false;
     RepeatWorker *param = repeat_worker_;
     async_context_remove_at_time_worker(asy_ctx_, param->worker());
-    if (param->sendWorker()->command())
+    if (param->isActive())
     {
         ret = true;
         delete param->sendWorker()->command();
         param->sendWorker()->setCommand(nullptr);
+        param->reset();
     }
     return ret;
 }

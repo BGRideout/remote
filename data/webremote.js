@@ -40,7 +40,7 @@ function process_ws_message(evt)
     if (obj.action !== undefined)
     {
         showLED("off");
-        if (obj.action == "press")
+        if (obj.action == "press" || obj.action == "busy")
         {
             showLED("on");
         }
@@ -54,7 +54,7 @@ function process_ws_message(evt)
         showLED("off");
     }
     
-    if (obj.redirect !== undefined && obj.redirect != "")
+    if (obj.redirect !== undefined && obj.redirect != "" && obj.action != "busy")
     {
         let loc = document.location;
         document.location = loc.origin + obj.redirect;

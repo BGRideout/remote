@@ -64,7 +64,7 @@ private:
         async_at_time_worker_t      worker_;            // Repeat time worker
         SendWorker                  *send_;             // Send worker
         int                         interval_;          // Repeat interval (ms)
-        int                         count_;             // Limit counter
+        int                         count_;             // Limit counter / activity flag
 
     public:
         RepeatWorker(IR_Processor *parent,
@@ -82,7 +82,9 @@ private:
         int interval() const { return interval_; }
         void setInterval(int interval) { interval_ = interval; }
 
-        bool reachedLimit() { return count_++ == 100; }
+        void setActive() { count_ = 1; }
+        bool isActive() const { return count_ > 0; }
+        bool reachedLimit() { return count_++ > 100; }
 
         void reset() { interval_ = 0; count_ = 0; }
     };
