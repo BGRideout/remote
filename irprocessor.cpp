@@ -14,10 +14,9 @@ IR_Processor::IR_Processor(Remote *remote, int gpio_send, int gpio_receive)
 
 void IR_Processor::run()
 {
-    send_worker_ = new SendWorker(this, &send_work, &ir_complete);
-    async_context_add_when_pending_worker(asy_ctx_, send_worker_->irComplete());
+    send_worker_ = new SendWorker(this, asy_ctx_);
 
-    repeat_worker_ = new RepeatWorker(this, send_worker_, &repeat_work);
+    repeat_worker_ = new RepeatWorker(this, asy_ctx_, send_worker_);
 
     while (true)
     {
@@ -108,14 +107,8 @@ bool IR_Processor::send(Command *cmd)
 bool IR_Processor::send(SendWorker *param)
 {
     param->setStep(0);
-    return async_context_add_at_time_worker_in_ms(asy_ctx_, param->timeWorker(), 0);
+    return param->start();
 }    
-
-void IR_Processor::send_work(async_context_t *context, async_at_time_worker_t *worker)
-{
-    SendWorker *param = sendWorker(worker);
-    param->irProcessor()->send_work(param);
-}
 
 void IR_Processor::send_work(SendWorker *param)
 {
@@ -136,17 +129,10 @@ void IR_Processor::send_work(SendWorker *param)
     }
 }
 
-void IR_Processor::ir_complete(async_context_t *contet, async_when_pending_worker_t *worker)
-{
-    SendWorker *param = sendWorker(worker);
-    const Command::Step &step = param->command()->steps().at(param->nextStep());
-    async_context_add_at_time_worker_in_ms(param->irProcessor()->asy_ctx_, param->timeWorker(), step.delay());
-}
-
 void IR_Processor::set_ir_complete(void *user_data)
 {
     SendWorker *param = sendWorker(user_data);
-    async_context_set_work_pending(param->irProcessor()->asy_ctx_, param->irComplete());
+    param->setIRComplete();
 }
 
 bool IR_Processor::do_repeat(Command *cmd)
@@ -158,6 +144,7 @@ bool IR_Processor::do_repeat(Command *cmd)
     SendWorker *sparam = rparam->sendWorker();
     sparam->reset();
     sparam->setCommand(rcmd);
+    sparam->setRepeatWorker(rparam);
 
     int repeat = rcmd->repeat();
     if (rcmd->repeat() > 0)
@@ -177,16 +164,9 @@ bool IR_Processor::do_repeat(Command *cmd)
         }
         rparam->setInterval(repeat);
         printf("Repeating at %d msec intervals\n", repeat);
-        send(sparam);
-        ret = async_context_add_at_time_worker_in_ms(asy_ctx_, rparam->worker(), repeat);
+        ret = rparam->start();
     }
     return ret;
-}
-
-void IR_Processor::repeat_work(async_context_t *context, async_at_time_worker_t *worker)
-{
-    RepeatWorker *param = workerParam(worker);
-    param->irProcessor()->repeat_work(param);
 }
 
 void IR_Processor::repeat_work(RepeatWorker *param)
@@ -198,8 +178,6 @@ void IR_Processor::repeat_work(RepeatWorker *param)
         {
             send_param->setRepeated();
             send(send_param);
-            param->worker()->next_time = delayed_by_ms(param->worker()->next_time, param->interval());
-            async_context_add_at_time_worker(asy_ctx_, param->worker());
         }
         else
         {
@@ -211,15 +189,63 @@ void IR_Processor::repeat_work(RepeatWorker *param)
 
 bool IR_Processor::cancel_repeat()
 {
-    bool ret = false;
     RepeatWorker *param = repeat_worker_;
-    async_context_remove_at_time_worker(asy_ctx_, param->worker());
+    return param->cancel();
+}
+
+
+void IR_Processor::SendWorker::time_work(async_context_t *context, async_at_time_worker_t *worker)
+{
+    SendWorker *param = sendWorker(worker);
+    param->irProcessor()->send_work(param);
+}
+
+void IR_Processor::SendWorker::ir_complete(async_context_t *context, async_when_pending_worker_t *worker)
+{
+    SendWorker *param = sendWorker(worker);
+    param->scheduleNext();
+}
+
+void IR_Processor::RepeatWorker::time_work(async_context_t *context, async_at_time_worker_t *worker)
+{
+    RepeatWorker *param = repeatWorker(worker);
     if (param->isActive())
     {
+        param->irProcessor()->repeat_work(param);
+    }
+    else
+    {
+        param->finish();
+    }
+}
+
+void IR_Processor::RepeatWorker::ir_complete(async_context_t *context, async_when_pending_worker_t *worker)
+{
+    RepeatWorker *param = repeatWorker(worker);
+    if (param->isActive())
+    {
+        param->scheduleNext(param->interval());
+    }
+    else
+    {
+        param->finish();
+    }
+}
+
+bool IR_Processor::RepeatWorker::cancel()
+{
+    bool ret = false;
+    if (isActive())
+    {
         ret = true;
-        delete param->sendWorker()->command();
-        param->sendWorker()->setCommand(nullptr);
-        param->reset();
+        count_ = 0;
     }
     return ret;
+}
+
+void IR_Processor::RepeatWorker::finish()
+{
+    send_->resetCommand();
+    send_->reset();
+    reset();
 }

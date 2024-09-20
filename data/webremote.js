@@ -40,9 +40,13 @@ function process_ws_message(evt)
     if (obj.action !== undefined)
     {
         showLED("off");
-        if (obj.action == "press" || obj.action == "busy")
+        if (obj.action == "press")
         {
             showLED("on");
+        }
+        else if (obj.action == "busy")
+        {
+            showLED("busy");
         }
         else if (obj.action == "no-repeat")
         {
@@ -135,10 +139,15 @@ function showLED(state)
         led.innerHTML = "<svg viewbox='0 0 25 25' width='25' height='25' xmlns='http://www.w3.org/2000/svg'>" +
                         "<circle cx='12' cy='12' r='12' fill='red' stroke='white' stroke-width='3' /></svg>"
     }
+    else if (state == "busy")
+    {
+        led.innerHTML = "<svg viewbox='0 0 25 25' width='25' height='25' xmlns='http://www.w3.org/2000/svg'>" +
+                        "<circle cx='12' cy='12' r='12' fill='red' stroke='orange' stroke-width='3' /></svg>"
+    }
     else
     {
         led.innerHTML = "<svg viewbox='0 0 25 25' width='25' height='25' xmlns='http://www.w3.org/2000/svg'>" +
-                        "<circle cx='12' cy='12' r='12' fill='#660000' stroke='whitesmoke' stroke-width='3' /></svg>"
+                        "<circle cx='12' cy='12' r='12' fill='#660000' stroke='white' stroke-width='3' /></svg>"
     }
 }
 
