@@ -7,6 +7,7 @@
 #include "jsonmap.h"
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 class WEB;
 
@@ -17,9 +18,9 @@ public:
     {
     private:
         std::string     type_;              // Command type
-        int             address_;           // Address
-        int             value_;             // Value
-        int             delay_;             // Post action delay (msec)
+        uint16_t        address_;           // Address
+        uint16_t        value_;             // Value
+        uint32_t        delay_;             // Post action delay (msec)
 
         Step() : address_(0), value_(0), delay_(0) {}
 
@@ -28,9 +29,9 @@ public:
          : type_(act.type()), address_(act.address()), value_(act.value()), delay_(act.delay()) {}
 
         const std::string &type() const { return type_; }
-        int address() const { return address_; }
-        int value() const { return value_; }
-        int delay() const { return delay_; }
+        uint16_t address() const { return address_; }
+        uint16_t value() const { return value_; }
+        uint32_t delay() const { return delay_; }
     };
 
 private:

@@ -5,19 +5,19 @@
 #include <stdio.h>
 #include <pico/stdlib.h>
 
+#include "nec_transmitter.h"
+
 IR_Processor::IR_Processor(Remote *remote, int gpio_send, int gpio_receive)
-     : remote_(remote), gpio_send_(gpio_send), gpio_receive_(gpio_receive)
+     : remote_(remote), gpio_send_(gpio_send), gpio_receive_(gpio_receive), ir_led_(nullptr)
 {
     asy_ctx_ = cyw43_arch_async_context();
     printf("IR_Processor core %d\n", async_context_core_num(asy_ctx_));
+    send_worker_ = new SendWorker(this, asy_ctx_);
+    repeat_worker_ = new RepeatWorker(this, asy_ctx_, send_worker_);
 }
 
 void IR_Processor::run()
 {
-    send_worker_ = new SendWorker(this, asy_ctx_);
-
-    repeat_worker_ = new RepeatWorker(this, asy_ctx_, send_worker_);
-
     while (true)
     {
         Command *cmd = remote_->getNextCommand();
@@ -118,7 +118,27 @@ void IR_Processor::send_work(SendWorker *param)
     {
         const Command::Step &step = param->command()->steps().at(ii);
         printf("Step: '%s' %d %d %d repeat=%s\n", step.type().c_str(), step.address(), step.value(), step.delay(), param->repeated() ? "T" : "F");
-        set_ir_complete(param);
+
+        async_context_acquire_lock_blocking(asy_ctx_);
+#if 1
+        if (!ir_led_)
+        {
+            NEC_Transmitter *led = new NEC_Transmitter(gpio_send_);
+            ir_led_ = led;
+            ir_led_->setDoneCallback(set_ir_complete, param);
+        }
+        ir_led_->setMessageTimes(step.address(), step.value());
+        if (!param->repeated())
+        {
+            ir_led_->transmit();
+        }
+        else
+        {
+            ir_led_->repeat();
+        }
+#else
+        set_ir_complete(nullptr, param);
+#endif
     }
     else
     {
@@ -129,9 +149,10 @@ void IR_Processor::send_work(SendWorker *param)
     }
 }
 
-void IR_Processor::set_ir_complete(void *user_data)
+void IR_Processor::set_ir_complete(IR_LED *led, void *user_data)
 {
     SendWorker *param = sendWorker(user_data);
+    async_context_release_lock(param->irProcessor()->asy_ctx_);
     param->setIRComplete();
 }
 
@@ -182,7 +203,7 @@ void IR_Processor::repeat_work(RepeatWorker *param)
         else
         {
             printf("Stop repeating at limit\n");
-            cancel_repeat();
+            param->finish();
         }
     }
 }
@@ -213,7 +234,7 @@ void IR_Processor::RepeatWorker::time_work(async_context_t *context, async_at_ti
     {
         param->irProcessor()->repeat_work(param);
     }
-    else
+    else if (!param->isIdle())
     {
         param->finish();
     }
@@ -226,7 +247,7 @@ void IR_Processor::RepeatWorker::ir_complete(async_context_t *context, async_whe
     {
         param->scheduleNext(param->interval());
     }
-    else
+    else if (!param->isIdle())
     {
         param->finish();
     }
@@ -235,16 +256,17 @@ void IR_Processor::RepeatWorker::ir_complete(async_context_t *context, async_whe
 bool IR_Processor::RepeatWorker::cancel()
 {
     bool ret = false;
-    if (isActive())
+    if (!isIdle())
     {
         ret = true;
-        count_ = 0;
+        count_ = -1;
     }
     return ret;
 }
 
 void IR_Processor::RepeatWorker::finish()
 {
+    async_context_remove_at_time_worker(asy_ctx_, &time_worker_);
     send_->resetCommand();
     send_->reset();
     reset();

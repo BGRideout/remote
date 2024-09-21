@@ -42,6 +42,7 @@ bool Remote::init()
     async_context_add_when_pending_worker(cyw43_arch_async_context(), &worker_);
     
     WEB *web = WEB::get();
+    web->setDebug(0);
     web->set_http_callback(get()->http_message_);
     web->set_message_callback(get()->ws_message_);
     bool ret = web->init();

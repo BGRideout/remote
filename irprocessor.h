@@ -8,6 +8,7 @@
 #include <pico/async_context.h>
 
 class Remote;
+class IR_LED;
 
 class IR_Processor
 {
@@ -109,6 +110,7 @@ private:
         void setActive() { count_ = 1; }
         bool isActive() const { return count_ > 0; }
         bool reachedLimit() { return isActive() ? count_++ > 100 : false; }
+        bool isIdle() const { return count_ == 0; }
 
         bool start() { setActive(); time_worker_.next_time = get_absolute_time(); return send_->start(); }
         bool scheduleNext(int interval)
@@ -116,7 +118,7 @@ private:
             time_worker_.next_time = delayed_by_ms(time_worker_.next_time, interval);
             return async_context_add_at_time_worker(asy_ctx_, &time_worker_);
          }
-        void setIRComplete() { if (isActive()) async_context_set_work_pending(asy_ctx_, &ir_complete_); }
+        void setIRComplete() { if (count_ != 0) async_context_set_work_pending(asy_ctx_, &ir_complete_); }
 
         bool cancel();
         void finish();
@@ -132,6 +134,7 @@ private:
     SendWorker                      *send_worker_;      // Send step worker
     RepeatWorker                    *repeat_worker_;    // Repeat worker
     async_context_t                 *asy_ctx_;          // Async context
+    IR_LED                          *ir_led_;           // IR LED
 
     bool do_command(Command *cmd);
     bool do_reply(Command *cmd);
@@ -142,7 +145,7 @@ private:
     bool cancel_repeat();
 
     void send_work(SendWorker *param);
-    static void set_ir_complete(void *user_data);
+    static void set_ir_complete(IR_LED *led, void *user_data);
 
     void repeat_work(RepeatWorker *param);
 

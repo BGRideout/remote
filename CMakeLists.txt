@@ -56,7 +56,7 @@ pico_enable_stdio_usb(${PROJECT_NAME} 1)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC pico_stdlib 
     pico_cyw43_arch_lwip_threadsafe_background pico_lwip_mbedtls pico_mbedtls pico_lwip_mdns
-    flash_filesystem tiny-json bgr_network bgr_util)
+    flash_filesystem tiny-json bgr_network bgr_ir_protocols bgr_util)
 
 pico_add_extra_outputs(${PROJECT_NAME})
 

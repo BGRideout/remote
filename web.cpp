@@ -122,7 +122,7 @@ err_t WEB::tcp_server_accept(void *arg, struct altcp_pcb *client_pcb, err_t err)
     }
     web->clients_.insert(std::pair<struct altcp_pcb *, WEB::CLIENT>(client_pcb, WEB::CLIENT(client_pcb)));
     if (isDebug(1)) printf("Client connected %p (%d clients)\n", client_pcb, web->clients_.size());
-    if (isDebug(2))
+    if (isDebug(3))
     {
         for (auto it = web->clients_.cbegin(); it != web->clients_.cend(); ++it)
         {
@@ -292,7 +292,7 @@ err_t WEB::write_next(altcp_pcb *client_pcb)
 void WEB::process_rqst(CLIENT &client)
 {
     bool ok = false;
-    if (isDebug(3)) printf("Request:\n%s\n", client.rqst().c_str());
+    if (isDebug(2)) printf("Request:\n%s\n", client.rqst().c_str());
     if (!client.isWebSocket())
     {
         ok = true;
@@ -442,7 +442,7 @@ void WEB::process_websocket(CLIENT &client)
 bool WEB::send_message(void *client, const std::string &message)
 {
     CLIENT *clptr = (CLIENT *)client;
-    if (isDebug(3)) printf("%p message: %s\n", clptr->pcb(), message.c_str());
+    if (isDebug(2)) printf("%p message: %s\n", clptr->pcb(), message.c_str());
     send_websocket(clptr->pcb(), WEBSOCKET_OPCODE_TEXT, message);
     return true;
 }
@@ -479,7 +479,7 @@ void WEB::close_client(struct altcp_pcb *client_pcb, bool isClosed)
                 if (isDebug(1)) printf("Closed %s %p. client count = %d\n",
                                     (ci->second.isWebSocket() ? "ws" : "http"), client_pcb, clients_.size() - 1);
                 clients_.erase(ci);
-                if (isDebug(2))
+                if (isDebug(3))
                 {
                     for (auto it = clients_.cbegin(); it != clients_.cend(); ++it)
                     {
