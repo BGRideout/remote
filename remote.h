@@ -10,7 +10,12 @@
 #include <pico/util/queue.h>
 #include <pico/async_context.h>
 
+#define     IR_SEND_GPIO    17
+#define     IR_RCV_GPIO     16
+#define     INDICATOR_GPIO  18
+
 class Command;
+class LED;
 
 class Remote
 {
@@ -20,6 +25,7 @@ private:
     queue_t                     exec_queue_;            // Command queue
     queue_t                     resp_queue_;            // Response queue
     async_when_pending_worker_t worker_;                // Response notice worker
+    LED                         *indicator_;            // Indicator LED
 
     bool http_message(WEB *web, void *client, const HTTPRequest &rqst);
     static bool http_message_(WEB *web, void *client, const HTTPRequest &rqst) { return Remote::get()->http_message(web, client, rqst); }
@@ -40,7 +46,7 @@ private:
     void get_replies();
 
     static Remote *singleton_;
-    Remote() {}
+    Remote() : indicator_(nullptr) {}
 
     struct URLPROC
     {
@@ -53,7 +59,7 @@ private:
 public:
     static Remote *get() { if (!singleton_) singleton_ = new Remote(); return singleton_; }
     ~Remote();
-    bool init();
+    bool init(int indicator_gpio);
 
     Command *getNextCommand();
     void commandReply(Command *command);

@@ -8,6 +8,7 @@
 #include "web_files.h"
 #include "jsonmap.h"
 #include "backup.h"
+#include "led.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,13 +33,14 @@ struct Remote::URLPROC Remote::funcs[] =
         {"/backup", &Remote::backup_get, &Remote::backup_post}
     };
 
-bool Remote::init()
+bool Remote::init(int indicator_gpio)
 {
+    indicator_ = new LED(indicator_gpio);
+
     queue_init(&exec_queue_, sizeof(Command *), 8);
     queue_init(&resp_queue_, sizeof(Command *), 8);
 
-    worker_.do_work = get_replies;
-    worker_.user_data = this;
+    worker_ = { .do_work = get_replies, .user_data = this };
     async_context_add_when_pending_worker(cyw43_arch_async_context(), &worker_);
     
     WEB *web = WEB::get();
@@ -434,9 +436,9 @@ int main ()
         return -1;
     }
 
-    Remote::get()->init();
+    Remote::get()->init(INDICATOR_GPIO);
 
-    IR_Processor *ir = new IR_Processor(Remote::get(), 18, 16);
+    IR_Processor *ir = new IR_Processor(Remote::get(), IR_SEND_GPIO, IR_RCV_GPIO);
     ir->run();
 
     return 0;

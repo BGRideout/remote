@@ -37,8 +37,8 @@ private:
         SendWorker(IR_Processor *parent, async_context_t *async)
          : irp_(parent), asy_ctx_(async), cmd_(nullptr), repeat_worker_(nullptr), send_step_(0), repeated_(false), do_reply_(false)
         {
-            time_worker_.do_work = time_work; time_worker_.user_data = this;
-            ir_complete_.do_work = ir_complete, ir_complete_.user_data = this;
+            time_worker_ = { .do_work = time_work, .user_data = this };
+            ir_complete_ = { .do_work = ir_complete, .user_data = this };
             async_context_add_when_pending_worker(asy_ctx_, &ir_complete_);
         }
 
@@ -97,8 +97,8 @@ private:
         RepeatWorker(IR_Processor *parent, async_context_t *async, SendWorker *sendWorker)
          : irp_(parent), asy_ctx_(async), send_(sendWorker), interval_(0), count_(0)
         {
-            time_worker_.do_work = time_work; time_worker_.user_data = this;
-            ir_complete_.do_work = ir_complete; ir_complete_.user_data = this;
+            time_worker_ = { .do_work = time_work, .user_data = this };
+            ir_complete_ = { .do_work = ir_complete, .user_data = this };
             async_context_add_when_pending_worker(asy_ctx_, &ir_complete_);
         }
 
