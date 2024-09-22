@@ -18,20 +18,21 @@ public:
     {
     private:
         std::string     type_;              // Command type
-        uint16_t        address_;           // Address
-        uint16_t        value_;             // Value
-        uint32_t        delay_;             // Post action delay (msec)
-
-        Step() : address_(0), value_(0), delay_(0) {}
+        int             address_;           // Address
+        int             value_;             // Value
+        int             delay_;             // Post action delay (msec)
 
     public:
+        Step() : address_(0), value_(0), delay_(0) {}
+        Step(const std::string &type, uint16_t address, uint16_t value, uint32_t delay)
+         : type_(type), address_(address), value_(value), delay_(delay) {}
         Step(const RemoteFile::Button::Action &act)
          : type_(act.type()), address_(act.address()), value_(act.value()), delay_(act.delay()) {}
 
         const std::string &type() const { return type_; }
-        uint16_t address() const { return address_; }
-        uint16_t value() const { return value_; }
-        uint32_t delay() const { return delay_; }
+        int address() const { return address_; }
+        int value() const { return value_; }
+        int delay() const { return delay_; }
     };
 
 private:

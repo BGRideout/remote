@@ -2,6 +2,7 @@
 
 #include "backup.h"
 #include "remotefile.h"
+#include "menu.h"
 #include <tiny-json.h>
 #include <string.h>
 #include <stdio.h>
@@ -60,6 +61,7 @@ bool Backup::loadBackupFile(const json_t *json, const char *filename)
 {
     bool ret = false;
     RemoteFile rfile;
+    Menu       menu;
     printf("Filename: %s\n", filename);
 
     if (strncmp(filename, "actions", 7) == 0)
@@ -69,7 +71,6 @@ bool Backup::loadBackupFile(const json_t *json, const char *filename)
         {
             std::ostringstream out;
             rfile.outputJSON(out);
-            printf("File data:\n%s\n", out.str().c_str());
             FILE *f = fopen(filename, "w");
             if (f)
             {
@@ -85,8 +86,24 @@ bool Backup::loadBackupFile(const json_t *json, const char *filename)
     }
     else if (strncmp(filename, "menu_", 5) == 0)
     {
-        printf("menu file\n");
-        ret = true;
+        ret = menu.loadJSON(json, filename);
+        if (ret)
+        {
+            std::ostringstream out;
+            menu.outputJSON(out);
+            printf("Menu:\n%s\n", out.str().c_str());
+            FILE *f = fopen(filename, "w");
+            if (f)
+            {
+                size_t n = fwrite(out.str().c_str(), out.str().size() + 1, 1, f);
+                int sts = fclose(f);
+                if (n != 1 || sts != 0)
+                {
+                    printf("Failed to write file %s: n=%d sts=%d\n", filename, n, sts);
+                    ret = false;
+                }
+            }
+         }
     }
 
     return ret;

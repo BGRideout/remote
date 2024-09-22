@@ -1,6 +1,7 @@
 //                  *****  IR_Processor class implementation  *****
 
 #include "irprocessor.h"
+#include "menu.h"
 #include "remote.h"
 #include <stdio.h>
 #include <pico/stdlib.h>
@@ -89,6 +90,7 @@ bool IR_Processor::do_command(Command *cmd)
 bool IR_Processor::send(Command *cmd)
 {
     bool ret = false;
+    start_time_ = to_ms_since_boot(get_absolute_time());
     SendWorker *param = send_worker_;
     if (param->command() == nullptr)
     {
@@ -110,49 +112,93 @@ bool IR_Processor::send(SendWorker *param)
     return param->start();
 }    
 
-void IR_Processor::send_work(SendWorker *param)
+bool IR_Processor::send_work(SendWorker *param)
 {
-    int ret = 0;
+    bool ret = false;
     int ii = param->sendStep();
-    if (ii < param->command()->steps().size())
+    if (param->command() && ii < param->command()->steps().size())
     {
-        const Command::Step &step = param->command()->steps().at(ii);
-        printf("Step: '%s' %d %d %d repeat=%s\n", step.type().c_str(), step.address(), step.value(), step.delay(), param->repeated() ? "T" : "F");
+        uint32_t elapsed = to_ms_since_boot(get_absolute_time()) - start_time_;
+        Command::Step step = param->getStep(ii);
+        printf("%5d Step: '%s' %d %d %d repeat=%s\n",
+         elapsed, step.type().c_str(), step.address(), step.value(), step.delay(), param->repeated() ? "T" : "F");
 
-        async_context_acquire_lock_blocking(asy_ctx_);
-#if 1
-        if (!ir_led_)
+        if (get_transmitter(step.type(), param))
         {
-            NEC_Transmitter *led = new NEC_Transmitter(gpio_send_);
-            ir_led_ = led;
-            ir_led_->setDoneCallback(set_ir_complete, param);
+            ir_led_->setMessageTimes(step.address(), step.value());
+            if (!param->repeated())
+            {
+                ir_led_->transmit();
+            }
+            else
+            {
+                ir_led_->repeat();
+            }
         }
-        ir_led_->setMessageTimes(step.address(), step.value());
-        if (!param->repeated())
+        else if (param->getMenuSteps(step))
         {
-            ir_led_->transmit();
+            step = param->getStep(ii);
+            printf("%5d Step: '%s' %d %d %d repeat=%s\n",
+            elapsed, step.type().c_str(), step.address(), step.value(), step.delay(), param->repeated() ? "T" : "F");
+            if (get_transmitter(step.type(), param))
+            {
+                ir_led_->setMessageTimes(step.address(), step.value());
+                if (!param->repeated())
+                {
+                    ir_led_->transmit();
+                }
+                else
+                {
+                    ir_led_->repeat();
+                }
+            }
+            else
+            {
+                set_ir_complete(nullptr, param);
+            }
         }
         else
         {
-            ir_led_->repeat();
+            set_ir_complete(nullptr, param);
         }
-#else
-        set_ir_complete(nullptr, param);
-#endif
+        ret = true;
     }
-    else
+    else if (param->command())
     {
         if (param->doReply())
         {
             do_reply(param);
         }
     }
+    return ret;
+}
+
+bool IR_Processor::get_transmitter(const std::string &proto, SendWorker *param)
+{
+    if (!ir_led_ || ir_led_->protocol() != proto)
+    {
+        if (ir_led_)
+        {
+             delete ir_led_;
+             ir_led_ = nullptr;
+        }
+        if (proto == "NEC")
+        {
+            ir_led_ = new NEC_Transmitter(gpio_send_);
+        }
+
+        if (ir_led_)
+        {
+            ir_led_->setDoneCallback(set_ir_complete, param);
+        }
+    }
+
+    return ir_led_ != nullptr;
 }
 
 void IR_Processor::set_ir_complete(IR_LED *led, void *user_data)
 {
     SendWorker *param = sendWorker(user_data);
-    async_context_release_lock(param->irProcessor()->asy_ctx_);
     param->setIRComplete();
 }
 
@@ -167,24 +213,33 @@ bool IR_Processor::do_repeat(Command *cmd)
     sparam->setCommand(rcmd);
     sparam->setRepeatWorker(rparam);
 
-    int repeat = rcmd->repeat();
     if (rcmd->repeat() > 0)
     {
+        int repeat = rcmd->repeat();
         int delays = 0;
-        for (auto it = cmd->steps().cbegin(); it != cmd->steps().cend(); ++it)
+        for (int ii = 0; ii < cmd->steps().size(); ii++)
         {
-            delays += it->delay();
+            if (get_transmitter(cmd->steps().at(ii).type(), sparam))
+            {
+                delays += ir_led_->repeatInterval();
+            }
+            else if (sparam->getMenuSteps(cmd->steps().at(ii)))
+            {
+                delays += sparam->getMenuDelay();
+            }
+            delays += cmd->steps().at(ii).delay();
         }
         if (delays > repeat)
         {
-            repeat = delays + 10;
+            repeat = delays;
         }
-        if (repeat < 100)
+        if (repeat < 20)
         {
-            repeat = 100;
+            repeat = 20;
         }
         rparam->setInterval(repeat);
         printf("Repeating at %d msec intervals\n", repeat);
+        start_time_ = to_ms_since_boot(get_absolute_time());
         ret = rparam->start();
     }
     return ret;
@@ -218,7 +273,13 @@ bool IR_Processor::cancel_repeat()
 void IR_Processor::SendWorker::time_work(async_context_t *context, async_at_time_worker_t *worker)
 {
     SendWorker *param = sendWorker(worker);
-    param->irProcessor()->send_work(param);
+    if (param->irProcessor()->send_work(param))
+    {
+        if (param->repeat_worker_)
+        {
+            param->repeat_worker_->setIRComplete();
+        }
+    }
 }
 
 void IR_Processor::SendWorker::ir_complete(async_context_t *context, async_when_pending_worker_t *worker)
@@ -226,6 +287,64 @@ void IR_Processor::SendWorker::ir_complete(async_context_t *context, async_when_
     SendWorker *param = sendWorker(worker);
     param->scheduleNext();
 }
+
+
+Command::Step IR_Processor::SendWorker::getStep(int stepNo, bool peek)
+{
+    Command::Step ret;
+    if (menu_steps_.size() > 0)
+    {
+        ret = menu_steps_.front();
+        if (!peek)
+        {
+            menu_steps_.pop_front();
+            nextStep();
+        }
+    }
+    else if (stepNo < cmd_->steps().size())
+    {
+        ret = cmd_->steps().at(stepNo);
+    }
+    return ret;
+}
+
+bool IR_Processor::SendWorker::getMenuSteps(const Command::Step &step)
+{
+    bool ret = Menu::getMenuSteps(step, menu_steps_);
+    // printf("Menu returned %d steps. status = %d\n", menu_steps_.size(), ret);
+    // for (auto it = menu_steps_.cbegin(); it != menu_steps_.cend(); ++it)
+    // {
+    //     printf("%s %d %d %d\n", it->type().c_str(), it->address(), it->value(), it->delay());
+    // }
+    return ret;
+}
+
+int IR_Processor::SendWorker::getMenuDelay()
+{
+    int ret = 0;
+    while (menu_steps_.size() > 0)
+    {
+        ret += menu_steps_.front().delay();
+        menu_steps_.pop_front();
+    }
+    return ret;
+}
+
+bool IR_Processor::SendWorker::scheduleNext()
+{
+    const Command::Step step = getStep(nextStep(), true);
+    int delay = step.delay();
+    int rpt = 0;
+    if (irProcessor()->get_transmitter(step.type(), this))
+    {
+        rpt = irProcessor()->ir_led_->repeatInterval();
+    }
+    absolute_time_t next1 = make_timeout_time_ms(delay);
+    absolute_time_t next2 = delayed_by_ms(time_worker_.next_time, rpt);
+    time_worker_.next_time = absolute_time_diff_us(next1, next2) > 0 ? next2 : next1;
+    return async_context_add_at_time_worker(asy_ctx_, &time_worker_);
+}
+
 
 void IR_Processor::RepeatWorker::time_work(async_context_t *context, async_at_time_worker_t *worker)
 {
