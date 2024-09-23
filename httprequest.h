@@ -53,6 +53,8 @@ public:
     const char *postValue(const std::string &key) const;
 
     static std::string uri_decode(const std::string &uri);
+    static void replaceHeader(std::string &rqst, const std::string &newHeader = std::string("HTTP/1.0 200 OK\r\nContent-Type: text/html"));
+    static void setHTMLLengthHeader(std::string &rqst);
 
     bool isComplete() const { return body_ != nullptr; }
     void clear() { headers_.clear(); body_offset_ = 0; body_size_ = 0; body_ = nullptr; post_data_.clear(); }

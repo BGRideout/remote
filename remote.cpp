@@ -26,6 +26,7 @@ Remote *Remote::singleton_ = nullptr;
 
 #define ROOT_OFFSET 0x140000
 #define ROOT_SIZE   0x060000
+#define WEB_DEBUG   0
 
 struct Remote::URLPROC Remote::funcs[] =
     {
@@ -46,7 +47,7 @@ bool Remote::init(int indicator_gpio, int button_gpio)
     async_context_add_when_pending_worker(cyw43_arch_async_context(), &worker_);
     
     WEB *web = WEB::get();
-    web->setDebug(0);
+    web->setDebug(WEB_DEBUG);
     web->set_http_callback(http_message_);
     web->set_message_callback(ws_message_);
     web->set_notice_callback(web_state);
@@ -91,17 +92,17 @@ Remote::~Remote()
     queue_free(&resp_queue_);
 }
 
-bool Remote::http_message(WEB *web, void *client, const HTTPRequest &rqst)
+bool Remote::http_message(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
  
     if (rqst.type() == "GET")
     {
-        ret = http_get(web, client, rqst);
+        ret = http_get(web, client, rqst,close);
     }
     else if (rqst.type() == "POST")
     {
-        ret = http_post(web, client, rqst);
+        ret = http_post(web, client, rqst, close);
     }
     return ret;
 }
@@ -119,7 +120,7 @@ void Remote::ws_message(WEB *web, void *client, const std::string &msg)
     }
 }
 
-bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst)
+bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     std::string url = rqst.path();
@@ -129,7 +130,7 @@ bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst)
     {
         if (url == funcs[ii].url && funcs[ii].get != nullptr)
         {
-            ret = (this->*funcs[ii].get)(web, client, rqst);
+            ret = (this->*funcs[ii].get)(web, client, rqst, close);
             found = true;
             break;
         }
@@ -142,13 +143,16 @@ bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst)
         u16_t datalen;
         if (url.length() > 0 && WEB_FILES::get()->get_file(url.substr(1), data, datalen))
         {
+            const char *hp = strstr(data, "\r\n\r\n");
+            int hl = hp - data;
             web->send_data(client, data, datalen, false);
+            close = false;
             ret = true;
         }
         else
         {
             printf("Remote page %s\n", url.c_str());
-            ret = remote_get(web, client, rqst);
+            ret = remote_get(web, client, rqst, close);
         }
     }
     if (!ret)
@@ -158,7 +162,7 @@ bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst)
     return ret;
 }
 
-bool Remote::http_post(WEB *web, void *client, const HTTPRequest &rqst)
+bool Remote::http_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     std::string url = rqst.path();
@@ -169,7 +173,7 @@ bool Remote::http_post(WEB *web, void *client, const HTTPRequest &rqst)
     {
         if (url == funcs[ii].url && funcs[ii].post != nullptr)
         {
-            ret = (this->*funcs[ii].post)(web, client, rqst);
+            ret = (this->*funcs[ii].post)(web, client, rqst, close);
             found = true;
             break;
         }
@@ -187,7 +191,7 @@ bool Remote::http_post(WEB *web, void *client, const HTTPRequest &rqst)
     return ret;
 }
 
-bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst)
+bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = rfile_.loadForURL(rqst.path());
     if (!ret)
@@ -290,8 +294,10 @@ bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst)
     }
 
     TXT::substitute(html, "!!buttons!!", "");
+    HTTPRequest::setHTMLLengthHeader(html);
     web->send_data(client, html.c_str(), html.length());
-
+    close = false;
+    
     return ret;
 }
 
@@ -314,7 +320,7 @@ bool Remote::remote_button(WEB *web, void *client, const JSONMap &msgmap)
     return ret;
 }
 
-bool Remote::backup_get(WEB *web, void *client, const HTTPRequest &rqst)
+bool Remote::backup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     const char *data;
@@ -341,6 +347,7 @@ bool Remote::backup_get(WEB *web, void *client, const HTTPRequest &rqst)
         }
 
         std::string html(data, datalen);
+        HTTPRequest::replaceHeader(html);
         TXT::substitute(html, "!!files!!", files);
         std::string val = rqst.cookie("msg");
         TXT::substitute(html, "!!msg!!", val);
@@ -352,7 +359,7 @@ bool Remote::backup_get(WEB *web, void *client, const HTTPRequest &rqst)
     return ret;
 }
 
-bool Remote::backup_post(WEB *web, void *client, const HTTPRequest &rqst)
+bool Remote::backup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     std::string msg("Success");

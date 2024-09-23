@@ -91,7 +91,7 @@ private:
     static void  tcp_server_err(void *arg, err_t err);
 
     void process_rqst(CLIENT &client);
-    void process_http_rqst(CLIENT &client);
+    void process_http_rqst(CLIENT &client, bool &close);
     void open_websocket(CLIENT &client);
     void process_websocket(CLIENT &client);
     void send_websocket(struct altcp_pcb *client_pcb, enum WebSocketOpCode opc, const std::string &payload, bool mask = false);
@@ -131,7 +131,7 @@ private:
     err_t send_buffer(struct altcp_pcb *client_pcb, void *buffer, u16_t buflen, bool allocate = true);
     err_t write_next(struct altcp_pcb *client_pcb);
 
-    bool (*http_callback_)(WEB *web, void *client, const HTTPRequest &rqst);
+    bool (*http_callback_)(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     void (*message_callback_)(WEB *web, void *client, const std::string &msg);
     void (*notice_callback_)(int state);
     void send_notice(int state) {if (notice_callback_) notice_callback_(state);}
@@ -140,7 +140,7 @@ public:
     static WEB *get();
     bool init();
 
-    void set_http_callback(bool (*cb)(WEB *web, void *client, const HTTPRequest &rqst)) { http_callback_ = cb; }
+    void set_http_callback(bool (*cb)(WEB *web, void *client, const HTTPRequest &rqst, bool &close)) { http_callback_ = cb; }
     void set_message_callback(void(*cb)(WEB *web, void *client, const std::string &msg)) { message_callback_ = cb; }
     void broadcast_websocket(const std::string &txt);
 

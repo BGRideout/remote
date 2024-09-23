@@ -48,18 +48,19 @@ private:
     Indicator                   *indicator_;            // Indicator LED object
     Button                      *button_;               // AP activation button
 
-    bool http_message(WEB *web, void *client, const HTTPRequest &rqst);
-    static bool http_message_(WEB *web, void *client, const HTTPRequest &rqst) { return Remote::get()->http_message(web, client, rqst); }
+    bool http_message(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    static bool http_message_(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+     { return Remote::get()->http_message(web, client, rqst, close); }
     void ws_message(WEB *web, void *client, const std::string &msg);
     static void ws_message_(WEB *web, void *client, const std::string &msg) { Remote::get()->ws_message(web, client, msg); }
 
-    bool http_get(WEB *web, void *client, const HTTPRequest &rqst);
-    bool http_post(WEB *web, void *client, const HTTPRequest &rqst);
+    bool http_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool http_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
 
-    bool remote_get(WEB *web, void *client, const HTTPRequest &rqst);
+    bool remote_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool remote_button(WEB *web, void *client, const JSONMap &msgmap);
-    bool backup_get(WEB *web, void *client, const HTTPRequest &rqst);
-    bool backup_post(WEB *web, void *client, const HTTPRequest &rqst);
+    bool backup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool backup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
 
     bool queue_command(const Command *cmd);
 
@@ -72,8 +73,8 @@ private:
     struct URLPROC
     {
         const char *url;
-        bool (Remote::* get)(WEB *web, void *client, const HTTPRequest &rqst);
-        bool (Remote::* post)(WEB *web, void *client, const HTTPRequest &rqst);
+        bool (Remote::* get)(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+        bool (Remote::* post)(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     };
     static struct URLPROC funcs[];   
 

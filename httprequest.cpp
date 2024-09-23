@@ -354,3 +354,25 @@ std::string HTTPRequest::uri_decode(const std::string &uri)
     }
     return (ret);
 }
+
+void HTTPRequest::replaceHeader(std::string &rqst, const std::string &newHeader)
+{
+    std::size_t i1 = rqst.find("\r\n\r\n");
+    if (i1 != std::string::npos)
+    {
+        std::size_t i2 = newHeader.find("\r\n\r\n");
+        rqst.replace(0, i1, newHeader, 0, i2);
+    }
+}
+
+void HTTPRequest::setHTMLLengthHeader(std::string &rqst)
+{
+    std::size_t i1 = rqst.find("\r\n\r\n");
+    if (i1 != std::string::npos)
+    {
+        std::string newHeader("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: ");
+        int cl = rqst.length() - i1 - 4;
+        newHeader += std::to_string(cl) + "\r\nConnection: keep-alive\r\nCache-Control: no-store\r\n\r\n";
+        replaceHeader(rqst, newHeader);
+    }
+}

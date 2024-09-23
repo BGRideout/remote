@@ -4,6 +4,7 @@ import sys
 import argparse
 import os
 import mimetypes
+from datetime import datetime, timezone
 
 def escape_bytes(bytes_obj):
     return ''.join('\\n' if b == 0x0a
@@ -29,6 +30,7 @@ p.o.writelines('#include <string>\n')
 p.o.writelines('\nWEB_FILES *WEB_FILES::singleton_ = nullptr;\n')
 p.o.writelines('\nWEB_FILES::WEB_FILES()\n{\n')
 
+timestamp = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S GMT").encode()
 fno = 1;
 for file in p.files:
     p.o.writelines("    // " + os.path.basename(file.name) + "\n")
@@ -36,7 +38,9 @@ for file in p.files:
 
     mime = mimetypes.guess_type(file.name)[0]
     ms = mime.split('/')
-    hdr = b"HTTP/1.0 200 OK\r\nContent-type: " + mime.encode() + b"\r\n\r\n"
+    hdr = b"HTTP/1.1 200 OK\r\nContent-Type: " + mime.encode() + \
+          b"\r\nContent-Length: " + str(os.path.getsize(file.name)).encode() + b"\r\nConnection: keep-alive\r\n" + \
+          b"Cache-Control: max-age=3600\r\nLast-Modified: " + timestamp + b"\r\n\r\n"
     if ms[0] == 'text' or 'xml' in ms[1] or ms[1] == 'pem-certificate-chain':
         p.o.writelines("        \"" + escape_bytes(hdr) + "\"\n")
         while True:

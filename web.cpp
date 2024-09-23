@@ -292,7 +292,8 @@ err_t WEB::write_next(altcp_pcb *client_pcb)
 void WEB::process_rqst(CLIENT &client)
 {
     bool ok = false;
-    if (isDebug(2)) printf("Request:\n%s\n", client.rqst().c_str());
+    bool close = true;
+    if (isDebug(2)) printf("Request from %p:\n%s\n", client.pcb(), client.rqst().c_str());
     if (!client.isWebSocket())
     {
         ok = true;
@@ -307,7 +308,7 @@ void WEB::process_rqst(CLIENT &client)
             {
                 client.http().parseRequest(client.rqst(), true);
             }
-            process_http_rqst(client);
+            process_http_rqst(client, close);
         }
     }
 
@@ -316,18 +317,18 @@ void WEB::process_rqst(CLIENT &client)
         send_buffer(client.pcb(), (void *)"HTTP/1.0 500 Internal Server Error\r\n\r\n", 38);
     }
 
-    if (!client.isWebSocket())
+    if (!client.isWebSocket() && close)
     {
         close_client(client.pcb());
     }
 }
 
-void WEB::process_http_rqst(CLIENT &client)
+void WEB::process_http_rqst(CLIENT &client, bool &close)
 {
     const char *data;
     u16_t datalen = 0;
     bool is_static = false;
-    if (http_callback_ && http_callback_(this, &client, client.http()))
+    if (http_callback_ && http_callback_(this, &client, client.http(), close))
     {
         ;
     }

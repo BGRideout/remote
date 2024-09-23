@@ -161,7 +161,6 @@ function sendToWS(msg)
     }
     else
     {
-        alert('No connection to remote!\\nRefresh browser and try again.');
+        alert('No connection to remote! - Refresh browser and try again.');
     }
 }
-
