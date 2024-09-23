@@ -116,7 +116,7 @@ private:
             async_context_add_when_pending_worker(asy_ctx_, &ir_complete_);
         }
 
-        bool start() { setActive(); time_worker_.next_time = get_absolute_time(); return send_->start(); }
+        bool start();
         void setIRComplete() { if (count_ != 0) async_context_set_work_pending(asy_ctx_, &ir_complete_); }
 
         void setInterval(int interval) { interval_ = interval; }
@@ -135,6 +135,10 @@ private:
     RepeatWorker                    *repeat_worker_;    // Repeat worker
     async_context_t                 *asy_ctx_;          // Async context
 
+    int                             busy_;              // Busy counter
+    void add_to_busy(int add);
+    void (*busy_cb_)(bool busy);
+
     bool do_command(Command *cmd);
     bool do_reply(Command *cmd);
     bool send(Command *cmd);
@@ -145,6 +149,8 @@ public:
     IR_Processor(Remote*remote, int gpio_send, int gpio_receive);
 
     void run();
+
+    void setBusyCallback(void (*busy_cb)(bool busy)) { busy_cb_ = busy_cb; }
 };
 
 #endif

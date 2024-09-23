@@ -9,7 +9,7 @@
 #include "nec_transmitter.h"
 
 IR_Processor::IR_Processor(Remote *remote, int gpio_send, int gpio_receive)
-     : remote_(remote), gpio_receive_(gpio_receive)
+     : remote_(remote), gpio_receive_(gpio_receive), busy_(0), busy_cb_(nullptr)
 {
     asy_ctx_ = cyw43_arch_async_context();
     send_worker_ = new SendWorker(this, asy_ctx_, gpio_send);
@@ -133,11 +133,24 @@ bool IR_Processor::cancel_repeat()
     return param->cancel();
 }
 
+void IR_Processor::add_to_busy(int add)
+{
+    int prev = busy_;
+    busy_ += add;
+    if (prev == 0 ^ busy_ == 0)
+    {
+        if (busy_cb_)
+        {
+            busy_cb_(busy_ != 0);
+        }
+    }
+}
 
 //  *****  SendWorker  *****
 
 bool IR_Processor::SendWorker::start()
 {
+    irProcessor()->add_to_busy(1);
     send_step_ = 0;
     if (!repeated())
     {
@@ -221,6 +234,7 @@ void IR_Processor::SendWorker::time_work()
         {
             reset();
         }
+    irProcessor()->add_to_busy(-1);
     }
 }
 
@@ -333,6 +347,14 @@ bool IR_Processor::SendWorker::get_transmitter(const std::string &proto)
 
 //  *****  RepeatWorker  *****
 
+bool IR_Processor::RepeatWorker::start()
+{
+    irProcessor()->add_to_busy(1);
+    setActive();
+    time_worker_.next_time = get_absolute_time();
+    return send_->start();
+}
+
 void IR_Processor::RepeatWorker::time_work(async_context_t *context, async_at_time_worker_t *worker)
 {
     RepeatWorker *param = repeatWorker(worker);
@@ -358,10 +380,10 @@ void IR_Processor::RepeatWorker::time_work()
             }
         }
     }
-    else if (!isIdle())
-    {
-        finish();
-    }
+    // else if (!isIdle())
+    // {
+    //     finish();
+    // }
 }
 
 void IR_Processor::RepeatWorker::ir_complete(async_context_t *context, async_when_pending_worker_t *worker)
@@ -405,4 +427,5 @@ void IR_Processor::RepeatWorker::finish()
     send_->resetCommand();
     send_->reset();
     reset();
+    irProcessor()->add_to_busy(-1);
 }

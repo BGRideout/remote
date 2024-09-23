@@ -33,9 +33,11 @@ struct Remote::URLPROC Remote::funcs[] =
         {"/backup", &Remote::backup_get, &Remote::backup_post}
     };
 
-bool Remote::init(int indicator_gpio)
+bool Remote::init(int indicator_gpio, int button_gpio)
 {
-    indicator_ = new LED(indicator_gpio);
+    indicator_ = new Indicator(indicator_gpio);
+    button_ = new Button(0, button_gpio);
+    button_->setEventCallback(button_event);
 
     queue_init(&exec_queue_, sizeof(Command *), 8);
     queue_init(&resp_queue_, sizeof(Command *), 8);
@@ -45,8 +47,9 @@ bool Remote::init(int indicator_gpio)
     
     WEB *web = WEB::get();
     web->setDebug(0);
-    web->set_http_callback(get()->http_message_);
-    web->set_message_callback(get()->ws_message_);
+    web->set_http_callback(http_message_);
+    web->set_message_callback(ws_message_);
+    web->set_notice_callback(web_state);
     bool ret = web->init();
 
     const char *data;
@@ -416,6 +419,88 @@ void Remote::get_replies()
     }
 }
 
+void Remote::ir_busy(bool busy)
+{
+    get()->indicator_->setIRState(busy);
+}
+
+void Remote::web_state(int state)
+{
+    get()->indicator_->setWebState(state);
+}
+
+void Remote::button_event(struct Button::ButtonEvent &ev)
+{
+    if (ev.action == Button::Button_Clicked)
+    {
+        printf("Start WiFi AP fo 30 minutes\n");
+        WEB::get()->enable_ap(30, "webremote");
+    }
+}
+
+//      *****  Indicator  *****
+
+Remote::Indicator::Indicator(int led_gpio) : ir_busy_(false), web_state_(0), ap_state_(false)
+{
+    led_ = new LED(led_gpio);
+     update();
+}
+
+Remote::Indicator::~Indicator()
+{
+    delete led_;
+}
+
+void Remote::Indicator::setWebState(int state)
+{
+    switch (state)
+    {
+    case WEB::STA_INITIALIZING:
+    case WEB::STA_CONNECTED:
+    case WEB::STA_DISCONNECTED:
+        web_state_ = state;
+        break;
+
+    case WEB::AP_ACTIVE:
+        ap_state_ = true;
+        break;
+
+    case WEB::AP_INACTIVE:
+        ap_state_ = false;
+        break;
+    }
+    update();
+}
+
+void Remote::Indicator::update()
+{
+    uint32_t    pattern = ir_busy_ ? 0xffffffff : 0;
+    switch (web_state_)
+    {
+    case WEB::STA_INITIALIZING:
+        pattern |= 0xcccccccc;
+        break;
+
+    case WEB::STA_CONNECTED:
+        break;
+
+    case WEB::STA_DISCONNECTED:
+        pattern |= 0x00ff00ff;
+        break;
+
+    default:
+        pattern = 0xcccccccc;
+    }
+
+    if (ap_state_)
+    {
+        pattern |= 0x0000ffff;
+    }
+
+    led_->setFlashPeriod(1000);
+    led_->setFlashPattern(pattern, 32);
+}
+
 int main ()
 {
     stdio_init_all();
@@ -436,9 +521,10 @@ int main ()
         return -1;
     }
 
-    Remote::get()->init(INDICATOR_GPIO);
+    Remote::get()->init(INDICATOR_GPIO, BUTTON_GPIO);
 
     IR_Processor *ir = new IR_Processor(Remote::get(), IR_SEND_GPIO, IR_RCV_GPIO);
+    ir->setBusyCallback(Remote::ir_busy);
     ir->run();
 
     return 0;

@@ -6,6 +6,7 @@
 #include "remotefile.h"
 #include "jsonmap.h"
 #include "web.h"
+#include "button.h"
 #include "pico/cyw43_arch.h"
 #include <pico/util/queue.h>
 #include <pico/async_context.h>
@@ -13,6 +14,7 @@
 #define     IR_SEND_GPIO    17
 #define     IR_RCV_GPIO     16
 #define     INDICATOR_GPIO  18
+#define     BUTTON_GPIO      3
 
 class Command;
 class LED;
@@ -25,7 +27,26 @@ private:
     queue_t                     exec_queue_;            // Command queue
     queue_t                     resp_queue_;            // Response queue
     async_when_pending_worker_t worker_;                // Response notice worker
-    LED                         *indicator_;            // Indicator LED
+
+    class Indicator
+    {
+    private:
+        LED                     *led_;                  // LED object pointer
+        bool                    ir_busy_;               // IR processor busy
+        int                     web_state_;             // Web connection state
+        bool                    ap_state_;              // AP active
+
+        void update();
+
+    public:
+        Indicator(int led_gpio);
+        ~Indicator();
+
+        void setIRState(bool busy) { ir_busy_ = busy; update(); }
+        void setWebState(int state);
+    };
+    Indicator                   *indicator_;            // Indicator LED object
+    Button                      *button_;               // AP activation button
 
     bool http_message(WEB *web, void *client, const HTTPRequest &rqst);
     static bool http_message_(WEB *web, void *client, const HTTPRequest &rqst) { return Remote::get()->http_message(web, client, rqst); }
@@ -59,10 +80,14 @@ private:
 public:
     static Remote *get() { if (!singleton_) singleton_ = new Remote(); return singleton_; }
     ~Remote();
-    bool init(int indicator_gpio);
+    bool init(int indicator_gpio, int button_gpio);
 
     Command *getNextCommand();
     void commandReply(Command *command);
+
+    static void ir_busy(bool busy);
+    static void web_state(int state);
+    static void button_event(struct Button::ButtonEvent &ev);
 };
 
 #endif
