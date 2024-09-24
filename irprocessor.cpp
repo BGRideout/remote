@@ -7,6 +7,7 @@
 #include <pico/stdlib.h>
 
 #include "nec_transmitter.h"
+#include "sony_transmitter.h"
 
 IR_Processor::IR_Processor(Remote *remote, int gpio_send, int gpio_receive)
      : remote_(remote), gpio_receive_(gpio_receive), busy_(0), busy_cb_(nullptr)
@@ -287,7 +288,7 @@ int IR_Processor::SendWorker::getTime()
         delays += cmd_->steps().at(ii).delay();
         if (get_transmitter(cmd_->steps().at(ii).type()))
         {
-            delays += ir_led_->repeatInterval();
+            delays += ir_led_->repeatInterval() * (1 + ir_led_->minimum_repeats());
         }
         else if (getMenuSteps(cmd_->steps().at(ii)))
         {
@@ -296,7 +297,7 @@ int IR_Processor::SendWorker::getTime()
                 delays += menu_steps_.front().delay();
                 if (get_transmitter(menu_steps_.front().type()))
                 {
-                    delays += ir_led_->repeatInterval();
+                    delays += ir_led_->repeatInterval() * (1 + ir_led_->minimum_repeats());
                 }
                 menu_steps_.pop_front();
             }
@@ -321,27 +322,41 @@ bool IR_Processor::SendWorker::scheduleNext()
     return async_context_add_at_time_worker(asy_ctx_, &time_worker_);
 }
 
+std::map<std::string, IR_LED *(*)(int)> IR_Processor::SendWorker::irs_ =
+            {
+                {"NEC", IR_Processor::SendWorker::new_NEC},
+                {"Sony12", IR_Processor::SendWorker::new_Sony12},
+                {"Sony15", IR_Processor::SendWorker::new_Sony15}
+            };
+IR_LED *IR_Processor::SendWorker::new_NEC(int gpio) { return new NEC_Transmitter(gpio); }
+IR_LED *IR_Processor::SendWorker::new_Sony12(int gpio) { return new Sony12_Transmitter(gpio); }
+IR_LED *IR_Processor::SendWorker::new_Sony15(int gpio) { return new Sony15_Transmitter(gpio); }
+
 bool IR_Processor::SendWorker::get_transmitter(const std::string &proto)
 {
+    bool ret = true;
     if (!ir_led_ || ir_led_->protocol() != proto)
     {
-        if (ir_led_)
+        ret = false;
+        auto it = irs_.find(proto);
+        if (it != irs_.end())
         {
-             delete ir_led_;
-             ir_led_ = nullptr;
-        }
-        if (proto == "NEC")
-        {
-            ir_led_ = new NEC_Transmitter(gpio_send_);
-        }
+            if (ir_led_)
+            {
+                delete ir_led_;
+                ir_led_ = nullptr;
+            }
+            ir_led_ = it->second(gpio_send_);
 
-        if (ir_led_)
-        {
-            ir_led_->setDoneCallback(set_ir_complete, this);
+            if (ir_led_)
+            {
+                ir_led_->setDoneCallback(set_ir_complete, this);
+                ret = true;
+            }
         }
     }
 
-    return ir_led_ != nullptr;
+    return ret;
 }
 
 
