@@ -123,16 +123,18 @@ void Remote::ws_message(WEB *web, void *client, const std::string &msg)
 bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
-    std::string url = rqst.path();
+    std::string url = rqst.root();
     bool found = false;
-    url = rqst.root();
-    for (int ii = 0; ii < count_of(funcs); ii++)
+    if (rqst.filetype() == "html")
     {
-        if (url == funcs[ii].url && funcs[ii].get != nullptr)
+        for (int ii = 0; ii < count_of(funcs); ii++)
         {
-            ret = (this->*funcs[ii].get)(web, client, rqst, close);
-            found = true;
-            break;
+            if (url == funcs[ii].url && funcs[ii].get != nullptr)
+            {
+                ret = (this->*funcs[ii].get)(web, client, rqst, close);
+                found = true;
+                break;
+            }
         }
     }
     if (!found)
@@ -143,8 +145,6 @@ bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst, bool &clo
         u16_t datalen;
         if (url.length() > 0 && WEB_FILES::get()->get_file(url.substr(1), data, datalen))
         {
-            const char *hp = strstr(data, "\r\n\r\n");
-            int hl = hp - data;
             web->send_data(client, data, datalen, false);
             close = false;
             ret = true;
@@ -353,7 +353,9 @@ bool Remote::backup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
         TXT::substitute(html, "!!msg!!", val);
         val = rqst.cookie("msgcolor", "transparent");
         TXT::substitute(html, "!!msgcolor!!", val);
+        HTTPRequest::setHTMLLengthHeader(html);
         web->send_data(client, html.c_str(), html.length());
+        close = false;
         ret = true;
     }
     return ret;
@@ -377,12 +379,14 @@ bool Remote::backup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &
         msg = "Invalid button";
     }
 
-    std::string resp("HTTP/1.0 303 OK\r\nLocation: /backup\r\n"
+    std::string resp("HTTP/1.1 303 OK\r\nLocation: /backup\r\n"
                      "Set-Cookie: msg=!!msg!!; Max-Age=5\r\n"
-                     "Set-Cookie: msgcolor=!!msgcolor!!; Max-Age=5\r\n\r\n");
+                     "Set-Cookie: msgcolor=!!msgcolor!!; Max-Age=5\r\n"
+                     "Connection: keep-alive\r\n\r\n");
     TXT::substitute(resp, "!!msg!!", msg);
     TXT::substitute(resp, "!!msgcolor!!", ret ? "green" : "red");
     web->send_data(client, resp.c_str(), resp.length());
+    close = false;
     ret = true;
     return ret;
 }

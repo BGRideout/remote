@@ -83,6 +83,18 @@ std::string HTTPRequest::root() const
     return ret.substr(0, i1);
 }
 
+std::string HTTPRequest::filetype() const
+{
+    std::string ret("html");
+    std::string pat = path();
+    std::size_t i1 = pat.rfind('.');
+    if (i1 != std::string::npos && i1 + 1 < pat.length())
+    {
+        ret = pat.substr(i1 + 1);
+    }
+    return ret;
+}
+
 std::string HTTPRequest::query(const std::string &key) const
 {
     return std::string();

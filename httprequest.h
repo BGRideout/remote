@@ -36,6 +36,7 @@ public:
     std::string url() const;
     std::string path() const;
     std::string root() const;
+    std::string filetype() const;
     std::string query(const std::string &key) const;
 
     int headerIndex(const std::string &name, int from=0) const;
