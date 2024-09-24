@@ -37,6 +37,7 @@ add_executable(${PROJECT_NAME}
 	remotefile.cpp
 	menu.cpp
 	irprocessor.cpp
+	irdevice.cpp
 	command.cpp
 	jsonstring.cpp
 	jsonmap.cpp

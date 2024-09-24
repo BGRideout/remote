@@ -3,6 +3,7 @@
 #ifndef IR_PROCESSOR_H
 #define IR_PROCESSOR_H
 
+#include "irdevice.h"
 #include "command.h"
 #include <vector>
 #include <deque>
@@ -21,7 +22,6 @@ private:
     {
     private:
         IR_Processor                *irp_;              // Pointer to this object
-        int                         gpio_send_;         // GPIO to send IR data
         IR_LED                      *ir_led_;           // IR LED
         uint32_t                    start_time_;        // Command start time
         async_context_t             *asy_ctx_;          // Async context
@@ -33,12 +33,6 @@ private:
         std::deque<Command::Step>   menu_steps_;        // Menu steps
         bool                        repeated_;          // Repeated operation flag
         bool                        do_reply_;          // Send reply when action complete
-
-        //  *****  Protocol mapping  *****
-        static std::map<std::string, IR_LED *(*)(int)> irs_;
-        static IR_LED *new_NEC(int gpio);
-        static IR_LED *new_Sony12(int gpio);
-        static IR_LED *new_Sony15(int gpio);
 
         IR_Processor *irProcessor() const { return irp_; }
         bool get_transmitter(const std::string &proto);
@@ -59,8 +53,8 @@ private:
         bool doReply() const { return do_reply_; }
 
     public:
-        SendWorker(IR_Processor *parent, async_context_t *async, int gpio_send)
-         : irp_(parent), gpio_send_(gpio_send), ir_led_(nullptr), start_time_(0), asy_ctx_(async),
+        SendWorker(IR_Processor *parent, async_context_t *async)
+         : irp_(parent), ir_led_(nullptr), start_time_(0), asy_ctx_(async),
            cmd_(nullptr), repeat_worker_(nullptr), send_step_(0), repeated_(false), do_reply_(false)
         {
             time_worker_ = { .do_work = time_work, .user_data = this };
@@ -79,7 +73,6 @@ private:
         void setDoReply(bool doReply = true) { do_reply_ = doReply; }
 
         int getTime();
-        bool validProtocol(const std::string &proto) const { return irs_.find(proto) != irs_.cend(); }
 
         void reset() { cmd_ = nullptr; repeat_worker_ = nullptr; send_step_ = 0; menu_steps_.clear(), repeated_ = false; do_reply_ = false; }
     };
@@ -138,7 +131,7 @@ private:
     static RepeatWorker *repeatWorker(async_when_pending_worker_t *worker) { return static_cast<RepeatWorker *>(worker->user_data); }
 
     Remote                          *remote_;           // Remote object
-    int                             gpio_receive_;      // GPIO to receive IR data
+    IR_Device                       *ir_device_;        // IR device object
     SendWorker                      *send_worker_;      // Send step worker
     RepeatWorker                    *repeat_worker_;    // Repeat worker
     async_context_t                 *asy_ctx_;          // Async context
@@ -155,6 +148,7 @@ private:
 
 public:
     IR_Processor(Remote*remote, int gpio_send, int gpio_receive);
+    ~IR_Processor() { delete ir_device_; delete send_worker_; delete repeat_worker_; }
 
     void run();
 

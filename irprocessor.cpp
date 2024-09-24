@@ -1,19 +1,18 @@
 //                  *****  IR_Processor class implementation  *****
 
 #include "irprocessor.h"
+#include "ir_led.h"
 #include "menu.h"
 #include "remote.h"
 #include <stdio.h>
 #include <pico/stdlib.h>
 
-#include "nec_transmitter.h"
-#include "sony_transmitter.h"
-
 IR_Processor::IR_Processor(Remote *remote, int gpio_send, int gpio_receive)
-     : remote_(remote), gpio_receive_(gpio_receive), busy_(0), busy_cb_(nullptr)
+     : remote_(remote), busy_(0), busy_cb_(nullptr)
 {
     asy_ctx_ = cyw43_arch_async_context();
-    send_worker_ = new SendWorker(this, asy_ctx_, gpio_send);
+    ir_device_ = new IR_Device(gpio_send, gpio_receive);
+    send_worker_ = new SendWorker(this, asy_ctx_);
     repeat_worker_ = new RepeatWorker(this, asy_ctx_, send_worker_);
 }
 
@@ -322,40 +321,13 @@ bool IR_Processor::SendWorker::scheduleNext()
     return async_context_add_at_time_worker(asy_ctx_, &time_worker_);
 }
 
-std::map<std::string, IR_LED *(*)(int)> IR_Processor::SendWorker::irs_ =
-            {
-                {"NEC", IR_Processor::SendWorker::new_NEC},
-                {"Sony12", IR_Processor::SendWorker::new_Sony12},
-                {"Sony15", IR_Processor::SendWorker::new_Sony15}
-            };
-IR_LED *IR_Processor::SendWorker::new_NEC(int gpio) { return new NEC_Transmitter(gpio); }
-IR_LED *IR_Processor::SendWorker::new_Sony12(int gpio) { return new Sony12_Transmitter(gpio); }
-IR_LED *IR_Processor::SendWorker::new_Sony15(int gpio) { return new Sony15_Transmitter(gpio); }
-
 bool IR_Processor::SendWorker::get_transmitter(const std::string &proto)
 {
-    bool ret = true;
-    if (!ir_led_ || ir_led_->protocol() != proto)
+    bool ret = irProcessor()->ir_device_->get_transmitter(proto, ir_led_);
+    if (ret)
     {
-        ret = false;
-        auto it = irs_.find(proto);
-        if (it != irs_.end())
-        {
-            if (ir_led_)
-            {
-                delete ir_led_;
-                ir_led_ = nullptr;
-            }
-            ir_led_ = it->second(gpio_send_);
-
-            if (ir_led_)
-            {
-                ir_led_->setDoneCallback(set_ir_complete, this);
-                ret = true;
-            }
-        }
+        ir_led_->setDoneCallback(set_ir_complete, this);
     }
-
     return ret;
 }
 
@@ -394,11 +366,11 @@ void IR_Processor::RepeatWorker::time_work()
                 finish();
             }
         }
+        else
+        {
+            finish();
+        }
     }
-    // else if (!isIdle())
-    // {
-    //     finish();
-    // }
 }
 
 void IR_Processor::RepeatWorker::ir_complete(async_context_t *context, async_when_pending_worker_t *worker)
