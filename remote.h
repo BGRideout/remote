@@ -24,6 +24,7 @@ class Remote
 {
 private:
     RemoteFile                  rfile_;                 // Remote page definition file
+    RemoteFile                  efile_;                 // Definition file for editing
     JSONMap                     icons_;                 // Icon list
     queue_t                     exec_queue_;            // Command queue
     queue_t                     resp_queue_;            // Response queue
@@ -49,6 +50,9 @@ private:
     Indicator                   *indicator_;            // Indicator LED object
     Button                      *button_;               // AP activation button
 
+    bool get_rfile(const std::string &url);
+    bool get_efile(const std::string &url, WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+
     bool http_message(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     static bool http_message_(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
      { return Remote::get()->http_message(web, client, rqst, close); }
@@ -66,6 +70,8 @@ private:
     bool setup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool prompt_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool prompt_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
 
     std::string get_label(const RemoteFile::Button *button) const;
     bool get_label(std::string &label, const std::string &background, const std::string &color, const std::string &fill) const;

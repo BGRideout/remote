@@ -97,7 +97,26 @@ std::string HTTPRequest::filetype() const
 
 std::string HTTPRequest::query(const std::string &key) const
 {
-    return std::string();
+    std::string ret;
+    std::string qry = uri_decode(url());
+    std::size_t i1 = qry.find('?');
+    if (i1 + 1 > qry.length()) i1 = qry.length();
+    qry.erase(0, i1 + 1);
+    std::vector<std::string> tok;
+    TXT::split(qry, "&", tok);
+    for (auto it = tok.begin(); it != tok.end(); ++it)
+    {
+        i1 = it->find('=');
+        if (i1 != std::string::npos && it->substr(0, i1) == key)
+        {
+            if (i1 + 1 < it->length())
+            {
+                ret = it->substr(i1 + 1);
+            }
+            break;
+        }
+    }
+    return ret;
 }
 
 int HTTPRequest::headerIndex(const std::string &name, int from) const
@@ -355,7 +374,7 @@ int HTTPRequest::postArray(const std::string &key, std::vector<const char *> &ar
 
 void HTTPRequest::printPostData() const
 {
-    printf("Post data for %s:\n", url());
+    printf("Post data for %s:\n", url().c_str());
     for (auto it = post_data_.cbegin(); it != post_data_.cend(); ++it)
     {
         printf("  '%s' : '%s'\n", it->first.c_str(), it->second);

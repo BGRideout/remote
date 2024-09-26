@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Unsaved Edits</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="/webremote.css" />
+</head>
+<body>
+ <h1>Unsaved Edits</h1>
+  <form id="saveForm" method="post">
+    <p>There are unsaved changes to <input name="editurl" type="text" readonly value="!!editurl!!"></p>
+    <p>Do you want to continue and abandon those changes?</p>
+    <p>
+        <input type="hidden" name="rqsturl" value="!!rqsturl!!"></imput>
+        <button type="submit" name="choice" value="yes">Yes</button>
+        <button type="submit" name="choice" value="no">No</button>
+    </p>
+  </form>
+</body>
+</html>

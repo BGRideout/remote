@@ -70,6 +70,7 @@ set(WEB_RESOURCE_FILES data/index.html
 	data/setup.html data/setupbtn.html data/setup.js
     data/webremote.css data/webremote.js
 	data/websocket.js data/favicon.ico data/icons.json
+	data/editprompt.html
     ${CERTS})
 set(WEB_FILES_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(WEB_FILES "${WEB_FILES_DIR}/web_files.cpp")

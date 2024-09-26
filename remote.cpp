@@ -33,7 +33,8 @@ struct Remote::URLPROC Remote::funcs[] =
         {std::regex("^/index(|\\.html)$", std::regex_constants::extended), &Remote::remote_get, nullptr},
         {std::regex("^/backup(|\\.html)$", std::regex_constants::extended), &Remote::backup_get, &Remote::backup_post},
         {std::regex("^(.*)/setup(|\\.html)$", std::regex_constants::extended), &Remote::setup_get, &Remote::setup_post},
-        {std::regex("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended), &Remote::setup_btn_get, &Remote::setup_btn_post}
+        {std::regex("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended), &Remote::setup_btn_get, &Remote::setup_btn_post},
+        {std::regex("^/editprompt(|\\.html)$", std::regex_constants::extended), &Remote::prompt_get, &Remote::prompt_post}
     };
 
 bool Remote::init(int indicator_gpio, int button_gpio)
@@ -92,6 +93,39 @@ Remote::~Remote()
         delete cmdptr;
     }
     queue_free(&resp_queue_);
+}
+
+bool Remote::get_rfile(const std::string &url)
+{
+    if (!efile_.isModified())
+    {
+        efile_.clear();
+    }
+    return rfile_.loadForURL(url);
+}
+
+bool Remote::get_efile(const std::string &url, WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+{
+    bool ret = false;
+    rfile_.clear();
+    if (!efile_.isModified() || RemoteFile::urlToAction(url) == efile_.filename())
+    {
+        ret = efile_.loadForURL(url);
+    }
+    else
+    {
+        std::string rurl = url;
+        if (rurl.empty()) rurl = "/";
+        std::string eurl = RemoteFile::actionToURL(efile_.filename());
+        if (eurl.empty()) eurl = "/";
+        printf("Requesting edit of '%s' over modified '%s'\n", url.c_str(), efile_.filename());
+        std::string resp("HTTP/1.1 303 OK\r\nLocation: /editprompt?editurl=" + eurl + "&rqsturl=" + rurl + "\r\n"
+                         "Connection: keep-alive\r\n\r\n");
+        web->send_data(client, resp.c_str(), resp.length());
+        close = false;
+        ret = true;
+    }
+    return ret;
 }
 
 bool Remote::http_message(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
@@ -191,7 +225,7 @@ bool Remote::http_post(WEB *web, void *client, const HTTPRequest &rqst, bool &cl
 
 bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
-    bool ret = rfile_.loadForURL(rqst.path());
+    bool ret = get_rfile(rqst.path());
     if (!ret)
     {
         printf("Error loading action file for %s\n", rqst.url().c_str());
@@ -281,7 +315,7 @@ bool Remote::remote_button(WEB *web, void *client, const JSONMap &msgmap)
 
     int button = msgmap.intValue("btnVal");
     std::string url = msgmap.strValue("path");
-    rfile_.loadForURL(url);
+    get_rfile(url);
     RemoteFile::Button *btn = rfile_.getButton(button);
     if (btn)
     {
@@ -372,11 +406,12 @@ bool Remote::setup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &cl
     if (std::regex_match(url, match, reg))
     {
         std::string base_url = match[1].str();
-        ret = rfile_.loadForURL(base_url);
+        ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
         {
             printf("Error loading action file for GET %s\n", rqst.url().c_str());
-            return false;
+            //  Return true as get_efile has issued response
+            return true;
         }
 
         const char *data;
@@ -385,19 +420,19 @@ bool Remote::setup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &cl
         {
             std::string html(data, datalen);
 
-            while(TXT::substitute(html, "!!title!!", rfile_.title()));
+            while(TXT::substitute(html, "!!title!!", efile_.title()));
 
-            bool modified = rfile_.isModified();
+            bool modified = efile_.isModified();
             TXT::substitute(html, "!!modified!!", modified ? "unsaved" : "saved");
 
             std::size_t bi = html.find("!!buttons!!");
             TXT::substitute(html, "!!buttons!!", "");
-            int nb = rfile_.maxButtonPosition();
+            int nb = efile_.maxButtonPosition();
             nb = (nb + 9) / 5 * 5 + 1;
             std::string button;
             for (int pos = 1; pos < nb; pos++)
             {
-                RemoteFile::Button *btn = rfile_.getButton(pos);
+                RemoteFile::Button *btn = efile_.getButton(pos);
                 std::string background;
                 std::string color;
                 std::string fill;
@@ -439,17 +474,18 @@ bool Remote::setup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &c
     if (std::regex_match(url, match, reg))
     {
         std::string base_url = match[1].str();
-        ret = rfile_.loadForURL(base_url);
+        ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
         {
             printf("Error loading action file for POST %s\n", rqst.url().c_str());
-            return false;
+            //  Return true as get_efile has sent response
+            return true;
         }
 
         const char *title = rqst.postValue("title");
         if (title)
         {
-            rfile_.setTitle(title);
+            efile_.setTitle(title);
         }
 
         std::string resp("HTTP/1.1 303 OK\r\nLocation: " + url + "\r\n"
@@ -484,16 +520,17 @@ bool Remote::setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool
             return true;
         }
 
-        ret = rfile_.loadForURL(base_url);
+        ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
         {
             printf("Error loading action file for GET %s\n", rqst.url().c_str());
-            return false;
+            //  Return true as get_efile has sent response
+            return true;
         }
 
         RemoteFile::Button newbtn;
-        RemoteFile::Button *button = rfile_.getButton(pos);
-        int nb = rfile_.maxButtonPosition();
+        RemoteFile::Button *button = efile_.getButton(pos);
+        int nb = efile_.maxButtonPosition();
         nb = (nb + 9) / 5 * 5 + 1;
         if (pos > 0 && pos <= nb)
         {            
@@ -563,14 +600,15 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
         int pos = std::atoi(match[3].str().c_str());
         printf("POST '%s' button at %d\n", base_url.c_str(), pos);
 
-        ret = rfile_.loadForURL(base_url);
+        ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
         {
             printf("Error loading action file for POST %s\n", rqst.url().c_str());
-            return false;
+            //  Return true as get_efile has sent response
+            return true;
         }
 
-        RemoteFile::Button *button = rfile_.getButton(pos);
+        RemoteFile::Button *button = efile_.getButton(pos);
         if (button)
         {
             const char *value = rqst.postValue("lbl");
@@ -591,7 +629,7 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
                 int newpos = atoi(value);
                 if (newpos != pos && newpos > 0 && newpos <= 100)
                 {
-                    rfile_.changePosition(button, newpos);
+                    efile_.changePosition(button, newpos);
                     pos = newpos;
                     url = base_url + "/setup/" + std::to_string(pos);
                 }
@@ -661,6 +699,59 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
         ret = true;
     }
     return ret;
+}
+
+bool Remote::prompt_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+{
+    bool ret = false;
+    std::string editurl = rqst.query("editurl");
+    std::string rqsturl = rqst.query("rqsturl");
+    if (editurl.empty() || rqsturl.empty())
+    {
+        web->send_data(client, "HTTP/1.1 400 Bad request\r\n\r\n", 28);
+        close = true;
+        return true;
+    }
+
+    const char *data;
+    u16_t datalen;
+    if (WEB_FILES::get()->get_file("editprompt.html", data, datalen))
+    {
+        std::string html(data, datalen);
+        TXT::substitute(html, "!!editurl!!", editurl);
+        TXT::substitute(html, "!!rqsturl!!", rqsturl);
+        HTTPRequest::setHTMLLengthHeader(html);
+        web->send_data(client, html.c_str(), html.length());
+        close = false;
+        ret = true;
+    }
+    return ret;
+}
+
+bool Remote::prompt_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+{
+    rqst.printPostData();
+    const char *editurl = rqst.postValue("editurl");
+    const char *rqsturl = rqst.postValue("rqsturl");
+    const char *choice = rqst.postValue("choice");
+    if (!editurl || !rqsturl || !choice)
+    {
+        web->send_data(client, "HTTP/1.1 400 Bad request\r\n\r\n", 28);
+        close = true;
+        return true;
+    }
+
+    std::string url(rqsturl);
+    if (strcmp(choice, "yes") == 0)
+    {
+        url += "/setup";
+        efile_.clear();
+    }
+    std::string resp("HTTP/1.1 303 OK\r\nLocation: " + url + "\r\n"
+                        "Connection: keep-alive\r\n\r\n");
+    web->send_data(client, resp.c_str(), resp.length());
+    close = false;
+    return true;
 }
 
 std::string Remote::get_label(const RemoteFile::Button *button) const
