@@ -10,6 +10,7 @@
 #include "pico/cyw43_arch.h"
 #include <pico/util/queue.h>
 #include <pico/async_context.h>
+#include <regex>
 
 #define     IR_SEND_GPIO    17
 #define     IR_RCV_GPIO     16
@@ -61,6 +62,13 @@ private:
     bool remote_button(WEB *web, void *client, const JSONMap &msgmap);
     bool backup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool backup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool setup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool setup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+
+    std::string get_label(const RemoteFile::Button *button) const;
+    bool get_label(std::string &label, const std::string &background, const std::string &color, const std::string &fill) const;
 
     bool queue_command(const Command *cmd);
 
@@ -72,7 +80,7 @@ private:
 
     struct URLPROC
     {
-        const char *url;
+        std::regex url_match;
         bool (Remote::* get)(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
         bool (Remote::* post)(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     };

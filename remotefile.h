@@ -4,6 +4,8 @@
 #define REMOTFILE_H
 
 #include "jsonstring.h"
+#include <string>
+#include <string.h>
 #include <vector>
 #include <tiny-json.h>
 #include <ostream>
@@ -23,25 +25,31 @@ public:
             int             address_;           // Address
             int             value_;             // Value
             int             delay_;             // Post action delay (msec)
+            bool            modified_;          // Modified flag
 
         public:
-            Action() : address_(0), value_(0), delay_(0) {}
-            Action(const char *type, int address, int value, int delay) : type_(type), address_(address), value_(value), delay_(delay) {}
+            Action() : address_(0), value_(0), delay_(0), modified_(false) {}
+            Action(const char *type, int address, int value, int delay)
+             : type_(type), address_(address), value_(value), delay_(delay), modified_(false) {}
 
             const char *type() const { return type_.str(); }
-            void setType(const char *type) { type_ = type; }
+            void setType(const char *type) { modified_ |= strcmp(type_.str(), type) != 0; type_ = type; }
 
             int address() const { return address_; }
-            void setAddress(int address) { address_ = address; }
+            void setAddress(int address) { modified_ |= address_ != address; address_ = address; }
 
             int value() const { return value_; }
-            void setValue(int value) { value_ = value; }
+            void setValue(int value) { modified_ |= value_ != value; value_ = value; }
             
             int delay() const { return delay_; }
-            void setDelay(int delay) { delay_ = delay; }
+            void setDelay(int delay) { modified_ |= delay_ != delay; delay_ = delay; }
 
             bool loadFromJSON(const json_t *json);
             void outputJSON(std::ostream &strm) const;
+
+            bool isModified() const { return modified_; }
+            void setModified() { modified_ = true; }
+            void clearModified() { modified_ = false; }
 
             void clear();
         };
@@ -55,30 +63,34 @@ public:
         int                 repeat_;            // Repeat interval (msec)
         int                 position_;          // Position index
         ActionList          actions_;           // Actions to be performed
+        bool                modified_;          // Modified flag
 
         void setPosition(int position) { position_ = position; }
 
     public:
-        Button() : repeat_(0), position_(0) {}
-        Button(int position) : repeat_(0), position_(position) {}
+        Button() : repeat_(0), position_(0), modified_(false) {}
+        Button(int position) : repeat_(0), position_(position), modified_(false) {}
         Button(int position, const char *label, const char *color, const char *redirect, int repeat)
-            : label_(label), color_(color), redirect_(redirect), repeat_(repeat), position_(position) {}
+            : label_(label), color_(color), redirect_(redirect), repeat_(repeat), position_(position), modified_(false) {}
 
         const char *label() const { return label_.str(); }
-        void setLabel(const char *label) { label_ = label; }
+        void setLabel(const char *label) { modified_ |= strcmp(label_.str(), label) != 0; label_ = label; }
 
         const char *color() const { return color_.str(); }
-        void setColor(const char *color) { color_ = color; }
+        void setColor(const char *color) { modified_ |= strcmp(color_.str(), color) != 0; color_ = color; }
+        void getColors(std::string &background, std::string &stroke, std::string &fill) const;
+        static void getColors(const Button *button, std::string &background, std::string &stroke, std::string &fill);
 
         const char *redirect() const { return redirect_.str(); }
-        void setRedirect(const char *redirect) { redirect_ = redirect; }
+        void setRedirect(const char *redirect) { modified_ |= strcmp(redirect_.str(), redirect) != 0; redirect_ = redirect; }
             
         int repeat() const { return repeat_; }
-        void setRepeat(int repeat) { repeat_ = repeat; }
+        void setRepeat(int repeat) { modified_ |= repeat_ != repeat; repeat_ = repeat; }
             
         int position() const { return position_; }
 
         const ActionList &actions() const { return actions_; }
+        Action *action(int seqno) { return (seqno >= 0 && seqno < actions_.size()) ? &actions_[seqno] : nullptr; }
 
         bool loadFromJSON(const json_t *json);
         void outputJSON(std::ostream &strm) const;
@@ -102,6 +114,19 @@ public:
          * @param   delay   Post command delay in msec
          */
         void addAction(const char *type, int address, int value, int delay);
+
+        /**
+         * @brief   Remove an action
+         * 
+         * @param   seqno   Sequence position of action
+         * 
+         * @return  true if action deleted
+         */
+        bool deleteAction(int seqno);
+
+        bool isModified() const;
+        void setModified() { modified_ = true; }
+        void clearModified();
     };
 
     typedef std::vector<Button> ButtonList;
@@ -112,18 +137,19 @@ private:
     ButtonList              buttons_;           // Page buttons
     char                    *data_;             // File data
     size_t                  datasize_;          // Data block size
+    bool                    modified_;          // Modified flag
 
     bool load();
     bool loadJSON(const json_t *json);
 
 public:
-    RemoteFile() : data_(nullptr), datasize_(0) {}
+    RemoteFile() : data_(nullptr), datasize_(0), modified_(false) {}
     ~RemoteFile() { clear(); }
 
     const char *filename() const { return filename_.str(); }
 
     const char *title() const { return title_.str(); }
-    void setTitle(const char *title) { title_ = title; }
+    void setTitle(const char *title) { modified_ |= strcmp(title_.str(), title) != 0; title_ = title; }
 
     /**
      * @brief   Access the map of buttons
@@ -131,6 +157,13 @@ public:
      * @return  Reference to the list of buttons
      */
     const ButtonList &buttons() const { return buttons_; }
+
+    /**
+     * @brief   Get maimum button position
+     * 
+     * @return  Largest position value for buttons
+     */
+    int maxButtonPosition() const;
 
     /**
      * @brief   Get pointer to button at specified position
@@ -182,6 +215,10 @@ public:
     bool loadString(const std::string &data, const char *filename);
     bool loadJSON(const json_t *json, const char *filename);
     void outputJSON(std::ostream &strm) const;
+
+    bool isModified() const;
+    void setModified() { modified_ = true; }
+    void clearModified();
 
     /**
      * @brief   Enumerate the action files

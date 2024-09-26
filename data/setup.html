@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Remote Setup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="/webremote.css" />
+  <script type="text/javascript" src="/setup.js"></script>
+ </head>
+ <body>
+  <h1>Remote Setup</h1>
+  <p>
+   <form method="post">
+    <label for="title">Title:</label>
+    <input type="text" class="title" name="title" id="title" value="!!title!!" />
+    <button type="submit">Save</button>
+    <button type="button" id="done" class="!!modified!!" onclick="btnDone()">Done</button>
+   </form>
+  </p>
+  <div class="setup">!!buttons!!</div>
+ </body>
+</html>

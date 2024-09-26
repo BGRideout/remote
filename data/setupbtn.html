@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Buttons</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="/webremote.css" />
+  <script type="text/javascript" src="/setup.js"></script>
+ </head>
+ <body>
+  <h1>Actions for Button !!btn!!</h1>
+  <h2>Page: !!path!!</h2>
+  <div>
+   <form id="actForm" method="post">
+   <p class="setparms">
+    <label for="lbl">Label:</label>
+    <input type="text" id="lbl" name="lbl" value="!!label!!" />
+    <label for="bck">Color:</label>
+    <input type="text" id="bck" name="bck" value="!!color!!" />
+    <label for="red">Redirect:</label>
+    <input type="text" id="red" name="red" value="!!redirect!!" />
+    <label for="repeat">Repeat (msec):</label>
+    <input type="number" id="repeat" name="repeat" min="0" max="1000" value="!!repeat!!" />
+    <label for="swap">Swap with</label>
+    <input type="number" name="swap" min="1" max="100" value="!!swap!!" />
+   </p>
+   <p id="irget" class="irget"></p>
+   <table>
+    <thead>
+     <tr>
+      <th>Proto</th>
+      <th>Addr</th>
+      <th>Cmd</th>
+      <th>Wait ms</th>
+     </tr>
+    </thead>
+    <tbody>
+     !!steps!!
+     <tr>
+      <td><input type="text" name="typ" value="" /></td>
+      <td><input type="text" name="add" value="" /></td>
+      <td><input type="text" name="val" value="" /></td>
+      <td><input type="text" name="dly" value="" /></td>
+      <td></td>
+      <td><button type="button" onclick="load_ir(!!btncount!!);">&lt;-IR</button></td>
+     </tr>
+    </tbody>
+   </table>
+   <p>
+    <button type="submit">Update</button>
+    <button type="button" onclick="document.location='!!path!!/setup';">Done</button>
+   </p>
+   </form>
+  </div>
+ </body>
+</html>

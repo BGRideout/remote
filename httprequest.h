@@ -52,6 +52,8 @@ public:
 
     const PostData &postData() const { return post_data_; }
     const char *postValue(const std::string &key) const;
+    int postArray(const std::string &key, std::vector<const char *> &array) const;
+    void printPostData() const;
 
     static std::string uri_decode(const std::string &uri);
     static void replaceHeader(std::string &rqst, const std::string &newHeader = std::string("HTTP/1.0 200 OK\r\nContent-Type: text/html"));

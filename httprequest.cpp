@@ -335,11 +335,31 @@ const char *HTTPRequest::postValue(const std::string &key) const
 {
     const char *ret = nullptr;
     auto it = post_data_.equal_range(key);
-    if (it.first != post_data_.cend())
+    if (it.first != it.second)
     {
         ret = it.first->second;
     }
     return ret;
+}
+
+int HTTPRequest::postArray(const std::string &key, std::vector<const char *> &array) const
+{
+    array.clear();
+    auto range = post_data_.equal_range(key);
+    for (auto it = range.first; it != range.second; ++it)
+    {
+        array.push_back(it->second);
+    }
+    return array.size();
+}
+
+void HTTPRequest::printPostData() const
+{
+    printf("Post data for %s:\n", url());
+    for (auto it = post_data_.cbegin(); it != post_data_.cend(); ++it)
+    {
+        printf("  '%s' : '%s'\n", it->first.c_str(), it->second);
+    }
 }
 
 std::string HTTPRequest::uri_decode(const std::string &uri)

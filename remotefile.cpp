@@ -17,6 +17,7 @@ void RemoteFile::clear()
     if (data_) delete [] data_;
     data_ = nullptr;
     datasize_ = 0;
+    modified_ = false;
 }
 
 bool RemoteFile::loadForURL(const std::string &url)
@@ -127,6 +128,19 @@ void RemoteFile::outputJSON(std::ostream &strm) const
     strm << "\n]}\n";
 }
 
+int RemoteFile::maxButtonPosition() const
+{
+    int ret = 0;
+    for (auto it = buttons_.cbegin(); it != buttons_.cend(); ++it)
+    {
+        if (it->position() > ret)
+        {
+            ret = it->position();
+        }
+    }
+    return ret;
+}
+
 RemoteFile::Button *RemoteFile::getButton(int position)
 {
     Button *ret = nullptr;
@@ -153,6 +167,7 @@ RemoteFile::Button *RemoteFile::addButton(int position, const char *label, const
             auto i1 = std::lower_bound(buttons_.begin(), buttons_.end(), Button(position));
             auto i2 = buttons_.emplace(i1, position, label, color, redirect, repeat);
             btn = &(*i2);
+            btn->setModified();
         }
         else
         {
@@ -172,6 +187,7 @@ bool RemoteFile::deleteButton(int position)
     if (it != buttons_.end())
     {
         buttons_.erase(it);
+        modified_ = true;
         ret = true;
     }
     return ret;
@@ -192,6 +208,25 @@ bool RemoteFile::changePosition(Button *button, int newpos)
     }
 
     return ret;
+}
+
+bool RemoteFile::isModified() const
+{
+    bool modified = modified_;
+    for (auto it = buttons_.cbegin(); !modified && it != buttons_.cend(); ++it)
+    {
+        modified |= it->isModified();
+    }
+    return modified;
+}
+
+void RemoteFile::clearModified()
+{
+    modified_ = false;
+    for (auto it = buttons_.begin(); it != buttons_.end(); ++it)
+    {
+        it->clearModified();
+    }
 }
 
 
@@ -270,9 +305,11 @@ bool RemoteFile::Button::loadFromJSON(const json_t *json)
             }
         }
     }
+    modified_ = false;
 
     return ret;
 }
+
 void RemoteFile::Button::outputJSON(std::ostream &strm) const
 {
     strm << "{\"pos\":" << position() << ","
@@ -304,6 +341,7 @@ void RemoteFile::Button::clear()
 void RemoteFile::Button::clearActions()
 {
     actions_.clear();
+    modified_ = true;
 }
 
 void RemoteFile::Button::addAction(const char *type, int address, int value, int delay)
@@ -313,6 +351,66 @@ void RemoteFile::Button::addAction(const char *type, int address, int value, int
         actions_.reserve(actions_.size() + 16);
     }
     actions_.emplace_back(type, address, value, delay);
+    modified_ = true;
+}
+
+bool RemoteFile::Button::deleteAction(int seqno)
+{
+    bool ret = false;
+    if (seqno >= 0 && seqno < actions_.size())
+    {
+        actions_.erase(actions_.begin() + seqno);
+        modified_ = true;
+    }
+    return ret;
+}
+
+void RemoteFile::Button::getColors(std::string &background, std::string &stroke, std::string &fill) const
+{
+    getColors(this, background, stroke, fill);
+}
+
+void RemoteFile::Button::getColors(const Button *button, std::string &background, std::string &stroke, std::string &fill)
+{
+    background = "#efefef";
+    stroke = "black";
+    fill = "transparent";
+    if (button)
+    {
+        std::vector<std::string> colors;
+        TXT::split(button->color(), "/", colors);
+        if (colors.size() > 0 && !colors.at(0).empty())
+        {
+            background = colors.at(0);
+        }
+        if (colors.size() > 1 && !colors.at(1).empty())
+        {
+            stroke = colors.at(1);
+        }
+        if (colors.size() > 2 && !colors.at(2).empty())
+        {
+            fill = colors.at(2);
+        }
+    }
+}
+
+bool RemoteFile::Button::isModified() const
+{
+    bool modified = modified_;
+    for (auto it = actions_.cbegin(); !modified && it != actions_.cend(); ++it)
+    {
+        modified |= it->isModified();
+    }
+    return modified;
+}
+
+void RemoteFile::Button::clearModified()
+{
+    modified_ = false;
+    for (auto it = actions_.begin(); it != actions_.end(); ++it)
+    {
+        it->clearModified();
+    }
 }
 
 bool operator < (const RemoteFile::Button &lhs, const RemoteFile::Button &rhs) {return lhs.position() < rhs.position(); }
@@ -366,6 +464,7 @@ bool RemoteFile::Button::Action::loadFromJSON(const json_t *json)
         {
             delay_ = 0;
         }
+        modified_ = false;
     }
 
     return ret;
@@ -385,6 +484,7 @@ void RemoteFile::Button::Action::clear()
     address_ = 0;
     value_ = 0;
     delay_ = 0;
+    modified_ = false;
 }
 
 
@@ -417,7 +517,7 @@ std::string RemoteFile::urlToAction(const std::string &path)
 {
     std::string ret("actions");
     std::string lpath(path);
-    if (lpath.at(0) == '/') lpath.erase(0, 1);
+    if (lpath.length() > 0 && lpath.at(0) == '/') lpath.erase(0, 1);
     std::size_t i1 = lpath.rfind('.');
     if (i1 != std::string::npos) lpath.erase(i1);
     bool index = lpath.empty() || lpath == "index";
