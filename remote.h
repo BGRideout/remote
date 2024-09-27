@@ -51,6 +51,7 @@ private:
     Button                      *button_;               // AP activation button
 
     bool get_rfile(const std::string &url);
+    bool get_efile(const std::string &url);
     bool get_efile(const std::string &url, WEB *web, void *client, const HTTPRequest &rqst, bool &close);
 
     bool http_message(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
@@ -70,6 +71,7 @@ private:
     bool setup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool setup_ir_get(WEB *web, void *client, const JSONMap &msgmap);
     bool prompt_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool prompt_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
 

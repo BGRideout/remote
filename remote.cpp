@@ -104,6 +104,11 @@ bool Remote::get_rfile(const std::string &url)
     return rfile_.loadForURL(url);
 }
 
+bool Remote::get_efile(const std::string &url)
+{
+    return efile_.loadForURL(url);
+}
+
 bool Remote::get_efile(const std::string &url, WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
@@ -150,9 +155,13 @@ void Remote::ws_message(WEB *web, void *client, const std::string &msg)
     {
         remote_button(web, client, msgmap);
     }
+    else if (msgmap.hasProperty("ir_get"))
+    {
+        setup_ir_get(web, client, msgmap);
+    }
     else
     {
-        printf("btnVal not found\n");
+        printf("Message processor not found for %s\n", msg.c_str());
     }
 }
 
@@ -232,7 +241,7 @@ bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
 
     std::string html(data, datalen);
 
-    while(TXT::substitute(html, "!!title!!", rfile_.title()));
+    while(TXT::substitute(html, "<?title?>", rfile_.title()));
 
     std::string backurl = rqst.root();
     std::size_t i1 = backurl.rfind('/');
@@ -242,17 +251,17 @@ bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
     }
     if (strcmp(rfile_.filename(), "actions.json") != 0)
     {
-        TXT::substitute(html, "!!backloc!!", backurl);
-        TXT::substitute(html, "!!backvis!!", "visible");
+        TXT::substitute(html, "<?backloc?>", backurl);
+        TXT::substitute(html, "<?backvis?>", "visible");
     }
     else
     {
-        TXT::substitute(html, "!!backloc!!", "/");
-        TXT::substitute(html, "!!backvis!!", "hidden");
+        TXT::substitute(html, "<?backloc?>", "/");
+        TXT::substitute(html, "<?backvis?>", "hidden");
     }
 
-    std::size_t bi = html.find("!!buttons!!");
-    TXT::substitute(html, "!!buttons!!", "");
+    std::size_t bi = html.find("<?buttons?>");
+    TXT::substitute(html, "<?buttons?>", "");
     std::string button;
     for (auto it = rfile_.buttons().cbegin(); it != rfile_.buttons().cend(); ++it)
     {
@@ -262,12 +271,12 @@ bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
 
         if (strlen(it->redirect()) > 0 || it->actions().size() > 0)
         {
-            button = "<button type=\"submit\"!!class!! style=\"grid-row:!row!; grid-column:!col!; color: {0}; background: {1};\""
+            button = "<button type=\"submit\"<?class!! style=\"grid-row:!row!; grid-column:!col!; color: {0}; background: {1};\""
                 " name=\"btnVal\" value=\"!pos!\">\n"
                 "  !label!\n"
                 "</button>\n";
 
-            TXT::substitute(button, "!!class!!", strlen(it->redirect()) > 0 && it->actions().size() == 0 ? " class=\"redir\"" : "");
+            TXT::substitute(button, "<?class?>", strlen(it->redirect()) > 0 && it->actions().size() == 0 ? " class=\"redir\"" : "");
         }
         else
         {
@@ -348,11 +357,11 @@ bool Remote::backup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
 
         std::string html(data, datalen);
         HTTPRequest::replaceHeader(html);
-        TXT::substitute(html, "!!files!!", files);
+        TXT::substitute(html, "<?files?>", files);
         std::string val = rqst.cookie("msg");
-        TXT::substitute(html, "!!msg!!", val);
+        TXT::substitute(html, "<?msg?>", val);
         val = rqst.cookie("msgcolor", "transparent");
-        TXT::substitute(html, "!!msgcolor!!", val);
+        TXT::substitute(html, "<?msgcolor?>", val);
         HTTPRequest::setHTMLLengthHeader(html);
         web->send_data(client, html.c_str(), html.length());
         close = false;
@@ -383,8 +392,8 @@ bool Remote::backup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &
                      "Set-Cookie: msg=!!msg!!; Max-Age=5\r\n"
                      "Set-Cookie: msgcolor=!!msgcolor!!; Max-Age=5\r\n"
                      "Connection: keep-alive\r\n\r\n");
-    TXT::substitute(resp, "!!msg!!", msg);
-    TXT::substitute(resp, "!!msgcolor!!", ret ? "green" : "red");
+    TXT::substitute(resp, "<?msg?>", msg);
+    TXT::substitute(resp, "<?msgcolor?>", ret ? "green" : "red");
     web->send_data(client, resp.c_str(), resp.length());
     close = false;
     ret = true;
@@ -405,8 +414,8 @@ bool Remote::setup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &cl
         std::string done = rqst.query("done");
         if (done == "true")
         {
-            efile_.clear();
             rfile_.clear();
+            efile_.clear();
             std::string resp("HTTP/1.1 303 OK\r\nLocation: " + base_url + "\r\n"
                             "Connection: keep-alive\r\n\r\n");
             web->send_data(client, resp.c_str(), resp.length());
@@ -428,13 +437,13 @@ bool Remote::setup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &cl
         {
             std::string html(data, datalen);
 
-            while(TXT::substitute(html, "!!title!!", efile_.title()));
+            while(TXT::substitute(html, "<?title?>", efile_.title()));
 
             bool modified = efile_.isModified();
-            TXT::substitute(html, "!!modified!!", modified ? "unsaved" : "saved");
+            TXT::substitute(html, "<?modified?>", modified ? "unsaved" : "saved");
 
-            std::size_t bi = html.find("!!buttons!!");
-            TXT::substitute(html, "!!buttons!!", "");
+            std::size_t bi = html.find("<?buttons?>");
+            TXT::substitute(html, "<?buttons?>", "");
             int nb = efile_.maxButtonPosition();
             nb = (nb + 9) / 5 * 5 + 1;
             std::string button;
@@ -496,6 +505,16 @@ bool Remote::setup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &c
             efile_.setTitle(title);
         }
 
+        const char *save = rqst.postValue("save");
+        if (efile_.isModified() && save && strcmp(save, "true") == 0)
+        {
+            if (efile_.saveFile())
+            {
+                efile_.clearModified();
+                rfile_.clear();
+            }
+        }
+
         std::string resp("HTTP/1.1 303 OK\r\nLocation: " + url + "\r\n"
                          "Connection: keep-alive\r\n\r\n");
         web->send_data(client, resp.c_str(), resp.length());
@@ -515,18 +534,9 @@ bool Remote::setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool
     if (std::regex_match(url, match, reg))
     {
         std::string base_url = match[1].str();
+        if (base_url.empty()) base_url = "/";
         int pos = std::atoi(match[3].str().c_str());
         printf("GET '%s' button at %d\n", base_url.c_str(), pos);
-        if (pos == 0)
-        {
-            //  Position zero indicates return to base URL
-            if (base_url.empty()) base_url = "/";
-            std::string resp("HTTP/1.1 303 OK\r\nLocation: " + base_url + "\r\n"
-                            "Connection: keep-alive\r\n\r\n");
-            web->send_data(client, resp.c_str(), resp.length());
-            close = false;
-            return true;
-        }
 
         ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
@@ -536,7 +546,7 @@ bool Remote::setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool
             return true;
         }
 
-        RemoteFile::Button newbtn;
+        RemoteFile::Button newbtn(pos);
         RemoteFile::Button *button = efile_.getButton(pos);
         int nb = efile_.maxButtonPosition();
         nb = (nb + 9) / 5 * 5 + 1;
@@ -558,18 +568,18 @@ bool Remote::setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool
         if (WEB_FILES::get()->get_file("setupbtn.html", data, datalen))
         {
             std::string html(data, datalen);
-            TXT::substitute(html, "!!label!!", button->label());
-            TXT::substitute(html, "!!color!!", button->color());
-            TXT::substitute(html, "!!redirect!!", button->redirect());
-            TXT::substitute(html, "!!repeat!!", std::to_string(button->repeat()));
-            TXT::substitute(html, "!!swap!!", std::to_string(button->position()));
+            TXT::substitute(html, "<?label?>", button->label());
+            TXT::substitute(html, "<?color?>", button->color());
+            TXT::substitute(html, "<?redirect?>", button->redirect());
+            TXT::substitute(html, "<?repeat?>", std::to_string(button->repeat()));
+            TXT::substitute(html, "<?swap?>", std::to_string(button->position()));
 
-            TXT::substitute(html, "!!btn!!", std::to_string(pos));
-            while(TXT::substitute(html, "!!path!!", base_url));
-            TXT::substitute(html, "!!btncount!!", std::to_string(button->actions().size()));
+            TXT::substitute(html, "<?btn?>", std::to_string(pos));
+            while(TXT::substitute(html, "<?path?>", base_url));
+            TXT::substitute(html, "<?btncount?>", std::to_string(button->actions().size()));
 
-            std::size_t bi = html.find("!!steps!!");
-            TXT::substitute(html, "!!steps!!", "");
+            std::size_t bi = html.find("<?steps?>");
+            TXT::substitute(html, "<?steps?>", "");
             std::string action;
             int row = 0;
             for (auto it = button->actions().cbegin(); it != button->actions().cend(); ++it, ++row)
@@ -616,10 +626,28 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
             return true;
         }
 
+        const char *value = rqst.postValue("lbl");
+        if (!value) value = "";
         RemoteFile::Button *button = efile_.getButton(pos);
         if (button)
         {
-            const char *value = rqst.postValue("lbl");
+            if (*value == 0)
+            {
+                if (efile_.deleteButton(pos))
+                {
+                    button = nullptr;
+                }
+            }
+        }
+        else
+        {
+            if (*value != 0)
+            {
+                button = efile_.addButton(pos, value, "", "", 0);
+            }
+        }
+        if (button)
+        {
             if (value) button->setLabel(value);
 
             value = rqst.postValue("bck");
@@ -721,6 +749,35 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
     return ret;
 }
 
+bool Remote::setup_ir_get(WEB *web, void *client, const JSONMap &msgmap)
+{
+    bool ret = false;
+    printf("ir_get = %d, path = %s\n",
+        msgmap.intValue("ir_get"), msgmap.strValue("path"));
+
+    int row = msgmap.intValue("ir_get");
+    std::string url = msgmap.strValue("path");
+    std::smatch match;
+    static std::regex reg("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended);
+    if (std::regex_match(url, match, reg))
+    {
+        std::string base_url = match[1].str();
+        int pos = std::atoi(match[3].str().c_str());
+        printf("IR_Get '%s' button %d row %d\n", base_url.c_str(), pos, row);
+
+        ret = get_efile(base_url);
+        RemoteFile::Button *btn = efile_.getButton(pos);
+        if (ret && btn)
+        {
+            std::string msg("{\"ir_resp\": " + std::to_string(row) +
+                            ", \"path\": \"" + url + "\"" +
+                            ", \"type\": \"\", \"address\": 0, \"value\": 0, \"delay\": 0}");
+            web->send_message(client, msg);
+        }
+    }
+    return ret;
+}
+
 bool Remote::prompt_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
@@ -738,8 +795,8 @@ bool Remote::prompt_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
     if (WEB_FILES::get()->get_file("editprompt.html", data, datalen))
     {
         std::string html(data, datalen);
-        TXT::substitute(html, "!!editurl!!", editurl);
-        TXT::substitute(html, "!!rqsturl!!", rqsturl);
+        TXT::substitute(html, "<?editurl?>", editurl);
+        TXT::substitute(html, "<?rqsturl?>", rqsturl);
         HTTPRequest::setHTMLLengthHeader(html);
         web->send_data(client, html.c_str(), html.length());
         close = false;

@@ -16,26 +16,3 @@ function btnDone()
        document.location = url.pathname.replaceAll(".html", "") + "?done=true"
     }
 }
-
-function load_ir(row)
-{
-    let ntc = document.getElementById("irget");
-    ntc.innerHTML = "Click button on remote";
-    // url = document.location.href;
-    // if (! url.endsWith("/"))
-    // {
-    //     url += "/"
-    // }
-    // document.location = url + row;
-}
-
-function apsel()
-{
-    let sel = document.getElementById("sel");
-    let idx = sel.selectedIndex;
-    if (idx > 0)
-    {
-        let ssid = document.getElementById("ssid");
-        ssid.value = sel.options[idx].innerHTML;
-    }
-}

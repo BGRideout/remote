@@ -10,6 +10,8 @@
 #include <tiny-json.h>
 #include <ostream>
 
+#define MAX_REMOTE_BUTTONS  100
+
 class RemoteFile
 {
 public:
@@ -191,12 +193,12 @@ public:
      * @brief   Add or update a button
      * 
      * @param   position    Position identifier of button
-     * @param   label       Label string (cannot be blank)
+     * @param   label       Label string
      * @param   color       Color string
      * @param   redirect    Redirect string
      * @param   repeat      Repeat interval (msec)
      * 
-     * @return  Pointer to button if added or updated, null if invalid position or label
+     * @return  Pointer to button if added or updated, null if invalid position
      */
     Button *addButton(int position, const char *label, const char *color, const char *redirect, int repeat);
 
@@ -228,6 +230,7 @@ public:
     bool loadString(const std::string &data, const char *filename);
     bool loadJSON(const json_t *json, const char *filename);
     void outputJSON(std::ostream &strm) const;
+    bool saveFile() const;
 
     bool isModified() const;
     void setModified() { modified_ = true; }

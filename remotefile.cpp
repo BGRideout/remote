@@ -4,6 +4,7 @@
 #include "txt.h"
 #include <algorithm>
 #include <dirent.h>
+#include <sstream>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -128,6 +129,26 @@ void RemoteFile::outputJSON(std::ostream &strm) const
     strm << "\n]}\n";
 }
 
+bool RemoteFile::saveFile() const
+{
+    bool ret = false;
+    FILE *f = fopen(filename_.str(), "w");
+    if (f)
+    {
+        ret = true;
+        std::ostringstream out;
+        outputJSON(out);
+        size_t n = fwrite(out.str().c_str(), out.str().size(), 1, f);
+        int sts = fclose(f);
+        if (n != 1 || sts != 0)
+        {
+            printf("Failed to write file %s: n=%d sts=%d\n", filename_.str(), n, sts);
+            ret = false;
+        }
+    }
+    return ret;
+}
+
 int RemoteFile::maxButtonPosition() const
 {
     int ret = 0;
@@ -155,7 +176,7 @@ RemoteFile::Button *RemoteFile::getButton(int position)
 RemoteFile::Button *RemoteFile::addButton(int position, const char *label, const char *color, const char *redirect, int repeat)
 {
     Button *btn = nullptr;
-    if (position > 0 && strlen(label) > 0)
+    if (position > 0 && position <= MAX_REMOTE_BUTTONS)
     {
         btn = getButton(position);
         if (!btn)

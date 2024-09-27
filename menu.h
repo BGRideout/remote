@@ -42,6 +42,7 @@ public:
     bool loadString(const std::string &data, const char *filename);
     bool loadJSON(const json_t *json, const char *filename);
     void outputJSON(std::ostream &strm) const;
+    bool saveFile() const;
     void clear() { name_.clear(), commands_.clear(); rows_.clear(), colrow_.clear(); }
 
     const std::string &name() const { return name_; }

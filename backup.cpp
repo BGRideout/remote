@@ -69,19 +69,7 @@ bool Backup::loadBackupFile(const json_t *json, const char *filename)
         ret = rfile.loadJSON(json, filename);
         if (ret)
         {
-            std::ostringstream out;
-            rfile.outputJSON(out);
-            FILE *f = fopen(filename, "w");
-            if (f)
-            {
-                size_t n = fwrite(out.str().c_str(), out.str().size() + 1, 1, f);
-                int sts = fclose(f);
-                if (n != 1 || sts != 0)
-                {
-                    printf("Failed to write file %s: n=%d sts=%d\n", filename, n, sts);
-                    ret = false;
-                }
-            }
+            ret = rfile.saveFile();
         }
     }
     else if (strncmp(filename, "menu_", 5) == 0)
@@ -89,21 +77,8 @@ bool Backup::loadBackupFile(const json_t *json, const char *filename)
         ret = menu.loadJSON(json, filename);
         if (ret)
         {
-            std::ostringstream out;
-            menu.outputJSON(out);
-            printf("Menu:\n%s\n", out.str().c_str());
-            FILE *f = fopen(filename, "w");
-            if (f)
-            {
-                size_t n = fwrite(out.str().c_str(), out.str().size() + 1, 1, f);
-                int sts = fclose(f);
-                if (n != 1 || sts != 0)
-                {
-                    printf("Failed to write file %s: n=%d sts=%d\n", filename, n, sts);
-                    ret = false;
-                }
-            }
-         }
+            ret = menu.saveFile();
+        }
     }
 
     return ret;

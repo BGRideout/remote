@@ -4,24 +4,25 @@
   <title>Buttons</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" type="text/css" href="/webremote.css" />
-  <script type="text/javascript" src="/setup.js"></script>
+  <script type="text/javascript" src="/setupbtn.js"></script>
+  <script type="text/javascript" src="/websocket.js"></script>
  </head>
  <body>
-  <h1>Actions for Button !!btn!!</h1>
-  <h2>Page: !!path!!</h2>
+  <h1>Actions for Button <?btn?></h1>
+  <h2>Page: <?path?></h2>
   <div>
    <form id="actForm" method="post">
    <p class="setparms">
     <label for="lbl">Label:</label>
-    <input type="text" id="lbl" name="lbl" value="!!label!!" />
+    <input type="text" id="lbl" name="lbl" value="<?label?>" />
     <label for="bck">Color:</label>
-    <input type="text" id="bck" name="bck" value="!!color!!" />
+    <input type="text" id="bck" name="bck" value="<?color?>" />
     <label for="red">Redirect:</label>
-    <input type="text" id="red" name="red" value="!!redirect!!" />
+    <input type="text" id="red" name="red" value="<?redirect?>" />
     <label for="repeat">Repeat (msec):</label>
-    <input type="number" id="repeat" name="repeat" min="0" max="1000" value="!!repeat!!" />
+    <input type="number" id="repeat" name="repeat" min="0" max="1000" value="<?repeat?>" />
     <label for="swap">Swap with</label>
-    <input type="number" name="swap" min="1" max="100" value="!!swap!!" />
+    <input type="number" name="swap" min="1" max="100" value="<?swap?>" />
    </p>
    <p id="irget" class="irget"></p>
    <table>
@@ -34,14 +35,14 @@
      </tr>
     </thead>
     <tbody>
-     !!steps!!
+     <?steps?>
      <tr>
       <td><input type="text" name="typ" value="" /></td>
       <td><input type="text" name="add" value="" /></td>
       <td><input type="text" name="val" value="" /></td>
       <td><input type="text" name="dly" value="" /></td>
       <td></td>
-      <td><button type="button" onclick="load_ir(!!btncount!!);">&lt;-IR</button></td>
+      <td><button type="button" onclick="load_ir(<?btncount?>);">&lt;-IR</button></td>
      </tr>
     </tbody>
    </table>

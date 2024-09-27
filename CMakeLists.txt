@@ -64,13 +64,15 @@ pico_add_extra_outputs(${PROJECT_NAME})
 
 
 find_package (Python3 REQUIRED COMPONENTS Interpreter)
-set(WEB_RESOURCE_FILES data/index.html
+set(WEB_RESOURCE_FILES
+ 	data/index.html data/webremote.js
  	data/backup.html data/backup.js
 	data/config.html data/config.js
-	data/setup.html data/setupbtn.html data/setup.js
-    data/webremote.css data/webremote.js
-	data/websocket.js data/favicon.ico data/icons.json
+	data/setup.html data/setup.js
+	data/setupbtn.html data/setupbtn.js
 	data/editprompt.html
+	data/websocket.js
+    data/webremote.css data/favicon.ico data/icons.json
     ${CERTS})
 set(WEB_FILES_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(WEB_FILES "${WEB_FILES_DIR}/web_files.cpp")

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sstream>
 
 std::map<std::string, Menu *> Menu::menus_;
 
@@ -174,6 +175,28 @@ void Menu::outputJSON(std::ostream &strm) const
         sep = ", ";
     }
     strm << "]\n}\n";
+}
+
+bool Menu::saveFile() const
+{
+    bool ret = false;
+    std::string filename("menu_");
+    filename += name_;
+    FILE *f = fopen(filename_.c_str(), "w");
+    if (f)
+    {
+        ret = true;
+        std::ostringstream out;
+        outputJSON(out);
+        size_t n = fwrite(out.str().c_str(), out.str().size(), 1, f);
+        int sts = fclose(f);
+        if (n != 1 || sts != 0)
+        {
+            printf("Failed to write file %s: n=%d sts=%d\n", filename_.c_str(), n, sts);
+            ret = false;
+        }
+    }
+    return ret;
 }
 
 bool Menu::getSteps(const Command::Step &step, std::deque<Command::Step> &steps)

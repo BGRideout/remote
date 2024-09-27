@@ -15,7 +15,7 @@
      <p><label for='save'>File to save</label></p>
      <p>
       <select id="save" name="savefile">
-       !!files!!
+       <?files?>
       </select>
      </p>
      <p><button type='submit' name='button' value='download'>Download</button></p>
@@ -29,7 +29,7 @@
      <p><button type='submit' name='button' value='upload'>Upload</button></p>
     </fieldset>
    </form>
-   <p class="msg" id="filemsg" style="color: !!msgcolor!!;">!!msg!!</p>
+   <p class="msg" id="filemsg" style="color: <?msgcolor?>;"><?msg?></p>
   </div>
  </body>
 </html>

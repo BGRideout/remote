@@ -8,10 +8,10 @@
 <body>
  <h1>Unsaved Edits</h1>
   <form id="saveForm" method="post">
-    <p>There are unsaved changes to <input name="editurl" type="text" readonly value="!!editurl!!"></p>
+    <p>There are unsaved changes to <input name="editurl" type="text" readonly value="<?editurl?>"></p>
     <p>Do you want to continue and abandon those changes?</p>
     <p>
-        <input type="hidden" name="rqsturl" value="!!rqsturl!!"></imput>
+        <input type="hidden" name="rqsturl" value="<?rqsturl?>"></imput>
         <button type="submit" name="choice" value="yes">Yes</button>
         <button type="submit" name="choice" value="no">No</button>
     </p>
