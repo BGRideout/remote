@@ -173,7 +173,6 @@ bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst, bool &clo
     if (!found)
     {
         ret = false;
-        url = rqst.path();
         const char *data;
         u16_t datalen;
         if (url.length() > 0 && WEB_FILES::get()->get_file(url.substr(1), data, datalen))
@@ -200,7 +199,7 @@ bool Remote::http_post(WEB *web, void *client, const HTTPRequest &rqst, bool &cl
     bool ret = false;
     printf("POST %s\n", rqst.url().c_str());
     bool found = false;
-    std::string url = rqst.root();
+    std::string url = rqst.path();
     for (int ii = 0; ii < count_of(funcs); ii++)
     {
         if (std::regex_match(url, funcs[ii].url_match) && funcs[ii].post != nullptr)
@@ -209,11 +208,6 @@ bool Remote::http_post(WEB *web, void *client, const HTTPRequest &rqst, bool &cl
             found = true;
             break;
         }
-    }
-
-    if (!found)
-    {
-        url = rqst.path();
     }
 
     if (!ret)
@@ -225,7 +219,7 @@ bool Remote::http_post(WEB *web, void *client, const HTTPRequest &rqst, bool &cl
 
 bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
-    bool ret = get_rfile(rqst.path());
+    bool ret = get_rfile(rqst.root());
     if (!ret)
     {
         printf("Error loading action file for %s\n", rqst.url().c_str());
@@ -240,7 +234,7 @@ bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
 
     while(TXT::substitute(html, "!!title!!", rfile_.title()));
 
-    std::string backurl = rqst.path();
+    std::string backurl = rqst.root();
     std::size_t i1 = backurl.rfind('/');
     if (i1 != std::string::npos && backurl.length() > i1 + 1)
     {
@@ -400,12 +394,26 @@ bool Remote::backup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &
 bool Remote::setup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
-    std::string url = rqst.path();
+    std::string url = rqst.root();
     std::smatch match;
     static std::regex reg("^(.*)/setup(|\\.html)$", std::regex_constants::extended);
     if (std::regex_match(url, match, reg))
     {
         std::string base_url = match[1].str();
+        if (base_url.empty()) base_url = "/";
+
+        std::string done = rqst.query("done");
+        if (done == "true")
+        {
+            efile_.clear();
+            rfile_.clear();
+            std::string resp("HTTP/1.1 303 OK\r\nLocation: " + base_url + "\r\n"
+                            "Connection: keep-alive\r\n\r\n");
+            web->send_data(client, resp.c_str(), resp.length());
+            close = false;
+            return true;
+        }
+
         ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
         {
@@ -468,7 +476,7 @@ bool Remote::setup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &c
 {
     rqst.printPostData();
     bool ret = false;
-    std::string url = rqst.path();
+    std::string url = rqst.root();
     std::smatch match;
     static std::regex reg("^(.*)/setup(|\\.html)$", std::regex_constants::extended);
     if (std::regex_match(url, match, reg))
@@ -501,7 +509,7 @@ bool Remote::setup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &c
 bool Remote::setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
-    std::string url = rqst.path();
+    std::string url = rqst.root();
     std::smatch match;
     static std::regex reg("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended);
     if (std::regex_match(url, match, reg))
@@ -571,7 +579,7 @@ bool Remote::setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool
                 action += "<td><input type=\"text\" name=\"add\" value=\"" + std::to_string(it->address()) + "\" /></td>";
                 action += "<td><input type=\"text\" name=\"val\" value=\"" + std::to_string(it->value()) + "\" /></td>";
                 action += "<td><input type=\"text\" name=\"dly\" value=\"" + std::to_string(it->delay()) + "\" /></td>";
-                action += "<td><button type=\"button\" onclick=\"insert_row(" + std::to_string(row) + ");\">+</button></td>";
+                action += "<td><button type=\"submit\" name=\"add_row\" value=\"" + std::to_string(row) + "\">+</button></td>";
                 action += "<td><button type=\"button\" onclick=\"load_ir(" + std::to_string(row) + ");\">&lt;-IR</button></td>";
                 action += "</tr>";
                 html.insert(bi, action);
@@ -591,7 +599,7 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
 {
     rqst.printPostData();
     bool ret = false;
-    std::string url = rqst.path();
+    std::string url = rqst.root();
     std::smatch match;
     static std::regex reg("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended);
     if (std::regex_match(url, match, reg))
@@ -686,10 +694,22 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
             {
                 printf("POST array sizes do not match\n");
             }
-        }
-        else if (pos == 0)
-        {
-            url = base_url + "/setup";
+
+            const char *add_row = rqst.postValue("add_row");
+            if (add_row)
+            {
+                int before = atoi(add_row);
+                if (before >= 0 && before < button->actions().size())
+                {
+                    button->insertAction(before);
+                }
+            }
+
+            const char *btn = rqst.postValue("button");
+            if (btn && strcmp(btn, "done") == 0)
+            {
+                url = base_url + "/setup";
+            }
         }
 
         std::string resp("HTTP/1.1 303 OK\r\nLocation: " + url + "\r\n"

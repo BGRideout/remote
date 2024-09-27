@@ -65,7 +65,7 @@ public:
         ActionList          actions_;           // Actions to be performed
         bool                modified_;          // Modified flag
 
-        void setPosition(int position) { position_ = position; }
+        void setPosition(int position) { modified_ = position_ != position; position_ = position; }
 
     public:
         Button() : repeat_(0), position_(0), modified_(false) {}
@@ -114,6 +114,19 @@ public:
          * @param   delay   Post command delay in msec
          */
         void addAction(const char *type, int address, int value, int delay);
+
+        /**
+         * @brief   Insert an action before the indicated position
+         * 
+         * @param   pos     Position in list to insert
+         * @param   type    IR protocol or other type string
+         * @param   address Address
+         * @param   value   Value
+         * @param   delay   Post command delay in msec
+         * 
+         * @return  true if insertd, false if bad position
+         */
+        bool insertAction(int pos, const char *type=nullptr, int address=0, int value=0, int delay=0);
 
         /**
          * @brief   Remove an action

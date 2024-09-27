@@ -2,49 +2,31 @@
 
 function btnAction(key)
 {
-    url = document.location.href;
-    console.log(url);
-    url.replace(".html", "");
-    if (! url.endsWith("/"))
-    {
-        url += "/"
-    }
-    console.log(url)
-    document.location = url + key;
+    let url = new URL(document.location.href);
+    document.location = url.pathname.replaceAll(".html", "") + "/" + key;
 }
 
 function btnDone()
 {
-     let db = document.getElementById("done")
-     let sts = db.getAttribute("class")
-     if (sts == "saved" || confirm("Changes not saved! Close anyway?"))
-     {
-         btnAction(0)
-     }
+    let url = new URL(document.location.href);
+    let db = document.getElementById("done")
+    let sts = db.getAttribute("class")
+    if (sts == "saved" || confirm("Changes not saved! Close anyway?"))
+    {
+       document.location = url.pathname.replaceAll(".html", "") + "?done=true"
+    }
 }
 
 function load_ir(row)
 {
     let ntc = document.getElementById("irget");
     ntc.innerHTML = "Click button on remote";
-    url = document.location.href;
-    if (! url.endsWith("/"))
-    {
-        url += "/"
-    }
-    document.location = url + row;
-}
-
-function load_ir_msg()
-{
-    let ntc = document.getElementById("msg");
-    ntc.innerHTML = "Click button on remote";
-}
-
-function insert_row(row)
-{
-    url = document.location.href;
-    document.location = url + "?add=" + row;
+    // url = document.location.href;
+    // if (! url.endsWith("/"))
+    // {
+    //     url += "/"
+    // }
+    // document.location = url + row;
 }
 
 function apsel()

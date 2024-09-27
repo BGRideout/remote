@@ -354,6 +354,22 @@ void RemoteFile::Button::addAction(const char *type, int address, int value, int
     modified_ = true;
 }
 
+bool RemoteFile::Button::insertAction(int pos, const char *type, int address, int value, int delay)
+{
+    bool ret = false;
+    if (pos >= 0 && pos < actions_.size())
+    {
+        if (actions_.size() == actions_.capacity())
+        {
+            actions_.reserve(actions_.size() + 16);
+        }
+        actions_.emplace(actions_.begin() + pos, type, address, value, delay);
+        modified_ = true;
+        ret = true;
+    }
+    return ret;
+}
+
 bool RemoteFile::Button::deleteAction(int seqno)
 {
     bool ret = false;

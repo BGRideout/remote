@@ -7,10 +7,10 @@ char JSONString::blank_[] = "";
 
 JSONString::JSONString(const char *string)
 {
-    int ll = strlen(string);
+    int ll = string ? strlen(string) : 0;
     buflen_ = ((ll + 32) / 32) * 32;
     string_ = new char[buflen_];
-    memcpy(string_, string, buflen_);
+    memcpy(string_, string ? string : blank_, buflen_);
 }
 
 JSONString::JSONString(const JSONString &other) : string_(nullptr), buflen_(0)
