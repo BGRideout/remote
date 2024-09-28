@@ -5,6 +5,7 @@
 #include "nec_transmitter.h"
 #include "nec_receiver.h"
 #include "sony_transmitter.h"
+#include "sony_receiver.h"
 #include "raw_receiver.h"
 #include <stdio.h>
 
@@ -15,8 +16,8 @@
 std::map<std::string, struct IR_Device::IRMap> IR_Device::irs_ =
             {
                 {"NEC", {.tx=IR_Device::new_NEC_tx, .decode=NEC_Receiver::decode}},
-                {"Sony12", {.tx=IR_Device::new_Sony12_tx}},
-                {"Sony15", {.tx=IR_Device::new_Sony15_tx}},
+                {"Sony12", {.tx=IR_Device::new_Sony12_tx, .decode=Sony12_Receiver::decode}},
+                {"Sony15", {.tx=IR_Device::new_Sony15_tx, .decode=Sony15_Receiver::decode}},
             };
 
 IR_LED *IR_Device::new_NEC_tx(int gpio) { return new NEC_Transmitter(gpio); }

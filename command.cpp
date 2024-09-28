@@ -22,7 +22,7 @@ Command::Command(WEB *web, void *client, const JSONMap &msgmap, const RemoteFile
             steps_.emplace_back(*it);
         }
     }
-    else if (msgmap.hasProperty("ir_get"));
+    else if (msgmap.hasProperty("ir_get"))
     {
         action_ = "ir_get";
         row_ = msgmap.intValue("ir_get");
