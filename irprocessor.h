@@ -146,6 +146,8 @@ private:
     bool do_repeat(Command *cmd);
     bool cancel_repeat();
 
+    static void identified(const std::string &type, uint16_t address, uint16_t value, void *data);
+
 public:
     IR_Processor(Remote*remote, int gpio_send, int gpio_receive);
     ~IR_Processor() { delete ir_device_; delete send_worker_; delete repeat_worker_; }

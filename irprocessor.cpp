@@ -11,7 +11,7 @@ IR_Processor::IR_Processor(Remote *remote, int gpio_send, int gpio_receive)
      : remote_(remote), busy_(0), busy_cb_(nullptr)
 {
     asy_ctx_ = cyw43_arch_async_context();
-    ir_device_ = new IR_Device(gpio_send, gpio_receive);
+    ir_device_ = new IR_Device(gpio_send, gpio_receive, asy_ctx_);
     send_worker_ = new SendWorker(this, asy_ctx_);
     repeat_worker_ = new RepeatWorker(this, asy_ctx_, send_worker_);
 }
@@ -76,7 +76,22 @@ bool IR_Processor::do_command(Command *cmd)
         cmd->setReply(cmd->action());
         do_reply(cmd);
     }
+    else if (cmd->action() == "ir_get")
+    {
+        ir_device_->identify(identified, new std::pair<IR_Processor *, Command *>(this, cmd));
+    }
     return true;
+}
+
+void IR_Processor::identified(const std::string &type, uint16_t address, uint16_t value, void *data)
+{
+    auto ptrs = static_cast<std::pair<IR_Processor *, Command *> *>(data);
+    IR_Processor *self = ptrs->first;
+    Command *cmd = ptrs->second;
+    cmd->setStep(type, address, value);
+    cmd->setReply("ir_resp");
+    self->do_reply(cmd);
+    delete ptrs;
 }
 
 bool IR_Processor::send(Command *cmd)

@@ -769,10 +769,8 @@ bool Remote::setup_ir_get(WEB *web, void *client, const JSONMap &msgmap)
         RemoteFile::Button *btn = efile_.getButton(pos);
         if (ret && btn)
         {
-            std::string msg("{\"ir_resp\": " + std::to_string(row) +
-                            ", \"path\": \"" + url + "\"" +
-                            ", \"type\": \"\", \"address\": 0, \"value\": 0, \"delay\": 0}");
-            web->send_message(client, msg);
+            Command *cmd = new Command(web, client, msgmap, btn);
+            queue_command(cmd);
         }
     }
     return ret;

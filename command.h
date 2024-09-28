@@ -48,6 +48,8 @@ private:
     int                 repeat_;            // Repeat interval
     std::vector<Step>   steps_;             // Command steps
 
+    int                 row_;               // Action row number
+
     std::string         reply_;             // Reply string
 
     static int          count_;             // Instance count
@@ -68,6 +70,7 @@ public:
     const std::string &redirect() const { return redirect_; }
     int repeat() const { return repeat_; }
     const std::vector<Step> &steps() { return steps_; }
+    void setStep(const std::string &type, uint16_t address, uint16_t value);
     const std::string &reply() const { return reply_; }
 
     void setRepeat(int repeat) { repeat_ = repeat; }
