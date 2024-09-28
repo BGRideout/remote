@@ -10,7 +10,7 @@
 
 #define IR_DEVICE_SAMPLES   256             // Maximum samples to read
 #define IR_DEVICE_TIMEOUT   10000           // Read timeout (msec)
-#define IR_DEVICE_BITTMO    1000            // Bit timeout
+#define IR_DEVICE_BITTMO    500             // Bit timeout
 
 std::map<std::string, struct IR_Device::IRMap> IR_Device::irs_ =
             {
@@ -75,6 +75,7 @@ void IR_Device::identify(void (*cb)(const std::string &type, uint16_t address, u
     raw_->set_bit_timeout(IR_DEVICE_BITTMO);
     raw_->set_rcv_callback(ir_rcv);
     raw_->set_tmo_callback(ir_tmo);
+    raw_->start_message_timeout();
 }
 
 void IR_Device::ir_rcv(uint64_t timestamp, uint16_t address, uint16_t value, IR_Receiver *obj)
