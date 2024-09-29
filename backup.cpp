@@ -5,11 +5,48 @@
 #include "menu.h"
 #include "txt.h"
 #include "web.h"
+#include "config.h"
 #include <tiny-json.h>
 #include <string.h>
 #include <stdio.h>
 #include <sstream>
+#include <vector>
 #include <sys/stat.h>
+
+const char *Backup::hdrs[] =
+    {
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: application/octet-stream\r\n"
+        "Content-Disposition: attachment; filename=",
+
+        "\r\n"
+        "Set-Cookie: msg=Success; Max-Age=5\r\n"
+        "Connection: keep-alive\r\n"
+        "Content-Length: ",
+
+        "\r\n\r\n",
+
+        "{\"backup\":\n[\n",
+
+        "\n{\"file\": \"",
+
+        "\", \"data\": ",
+
+        "}\n",
+
+        "]}\n"
+    };
+
+#define HTTP_HDR_1      0
+#define HTTP_HDR_2      1
+#define HTTP_HDR_3      2
+#define BACKUP_HDR      3
+#define FILE_HDR_1      4
+#define FILE_HDR_2      5
+#define FILE_TRAILER    6
+#define BACKUP_TRAILER  7
+
+#define SEGSize(idx) strlen(hdrs[idx])
 
 bool Backup::loadBackup(const HTTPRequest &post, std::string &msg)
 {
@@ -19,6 +56,7 @@ bool Backup::loadBackup(const HTTPRequest &post, std::string &msg)
     size_t la = strlen(actfile);
     char *data = new char[la + 1];
     memcpy(data, actfile, la + 1);
+    data[la] = 0;
     json_t jbuf[la / 4];
 
     json_t const* json = json_create(data, jbuf, sizeof jbuf / sizeof *jbuf );
@@ -27,14 +65,12 @@ bool Backup::loadBackup(const HTTPRequest &post, std::string &msg)
         const json_t *prop = json_getProperty(json, "backup");
         if (prop)
         {
-            printf("loading full backup\n");
             if (json_getType(prop) == JSON_ARRAY)
             {
                 for (const json_t *act = json_getChild(prop); act != nullptr; act = json_getSibling(act))
                 {
                     filename = json_getPropertyValue(act, "file");
                     const json_t *actions = json_getProperty(act, "data");
-                    printf("loading actions for %s\n", filename.c_str());
                     ret = loadBackupFile(actions, filename.c_str());
                 }
             }
@@ -64,7 +100,6 @@ bool Backup::loadBackupFile(const json_t *json, const char *filename)
     bool ret = false;
     RemoteFile rfile;
     Menu       menu;
-    printf("Filename: %s\n", filename);
 
     if (strncmp(filename, "actions", 7) == 0)
     {
@@ -88,75 +123,107 @@ bool Backup::loadBackupFile(const json_t *json, const char *filename)
 
 bool Backup::saveBackup(WEB *web, void *client, const HTTPRequest &rqst)
 {
-    bool ret = false;
-    int err = 0;
+    bool ret = true;
     std::string msg("Success");
+    std::vector<std::string> files;
     const char *savefile = rqst.postValue("savefile");
     if (!savefile) savefile = "";
-    if (savefile == "all")
+    std::string downloadFile = savefile;
+    if (downloadFile == "all")
     {
         // Full backup
+        downloadFile = CONFIG::get()->hostname();
+        downloadFile += ".json";
+        RemoteFile::actionFiles(files);
     }
     else
     {
         // Single file backup
-        struct stat sb;
-        int sts = stat(savefile, &sb);
-        err = errno;
-        if (sts == 0)
+        if (!downloadFile.empty())
         {
-            FILE *f = fopen(savefile, "r");
-            err = errno;
-            if (f)
-            {
-                char *data = new char[sb.st_size];
-                sts = fread(data, sizeof(char), sb.st_size, f);
-                err = errno;
-                if (sts == sb.st_size)
-                {
-                    if (data[sb.st_size - 1] == 0)
-                    {
-                        sb.st_size -= 1;
-                    }
-                    
-                    std::string resp("HTTP/1.1 200 OK\r\n"
-                                     "Content-Type: application/octet-stream\r\n"
-                                     "Content-Disposition: attachment; filename=");
-                    resp += savefile;
-                    resp += "\r\n"
-                                     "Set-Cookie: msg=Success; Max-Age=5\r\n"
-                                     "Connection: keep-alive\r\n"
-                                     "Content-Length: ";
-
-                    std::string start("{\"file\": \"");
-                    start += savefile;
-                    start += "\", \"data\": ";
-
-                    std::string finish("}");
-                    uint32_t ll = start.length() + sb.st_size + finish.length();
-
-                    resp += std::to_string(ll) + "\r\n\r\n" + start;
-                    web->send_data(client, resp.c_str(), resp.length());
-                    web->send_data(client, data, sb.st_size);
-                    web->send_data(client, finish.c_str(), finish.length());
-                    ret = true;
-                }
-                delete [] data;
-                fclose(f);
-            }
+            files.push_back(downloadFile);
         }
     }
 
-    if (!ret)
+    // Compute content length
+    uint32_t cl = SEGSize(BACKUP_HDR) + SEGSize(BACKUP_TRAILER);
+    for (auto it = files.cbegin(); it != files.cend(); ++it)
     {
-        msg = strerror(err);
-        std::string resp("HTTP/1.1 303 OK\r\nLocation: /backup\r\n"
-                        "Set-Cookie: msg<?msg?>; Max-Age=5\r\n"
-                        "Set-Cookie: msgcolor=<?msgcolor?>; Max-Age=5\r\n"
-                        "Connection: keep-alive\r\n\r\n");
-        TXT::substitute(resp, "<?msg?>", msg);
-        TXT::substitute(resp, "<?msgcolor?>", ret ? "green" : "red");
+        cl += fileSegmentSize(it->c_str());
+    }
+
+    // Send header and backup header
+    std::string resp(hdrs[HTTP_HDR_1]);
+    resp += downloadFile;
+    resp += hdrs[HTTP_HDR_2];
+    resp += std::to_string(cl);
+    resp += hdrs[HTTP_HDR_3];
+
+    resp += hdrs[BACKUP_HDR];
+    web->send_data(client, resp.c_str(), resp.length());
+
+    // Send file segments
+    for (auto it = files.cbegin(); it != files.cend(); ++it)
+    {
+        resp = hdrs[FILE_HDR_1] + *it + hdrs[FILE_HDR_2];
         web->send_data(client, resp.c_str(), resp.length());
+
+        char *data = fileData(it->c_str());
+        if (data)
+        {
+            web->send_data(client, data, fileSize(it->c_str()));
+            delete [] data;
+        }
+        web->send_data(client, hdrs[FILE_TRAILER], SEGSize(FILE_TRAILER));
+    }
+
+    // Send backup trailer
+    web->send_data(client, hdrs[BACKUP_TRAILER], SEGSize(BACKUP_TRAILER));
+
+    return ret;
+}
+
+uint32_t Backup::fileSize(const char *filename)
+{
+    uint32_t ret = 0;
+    struct stat sb;
+    int sts = stat(filename, &sb);
+    if (sts == 0)
+    {
+        ret = sb.st_size;
+    }
+    return ret;
+}
+
+uint32_t Backup::fileSegmentSize(const char *filename)
+{
+    uint32_t ret = fileSize(filename);
+    ret += SEGSize(FILE_HDR_1) + strlen(filename) + SEGSize(FILE_HDR_2) + SEGSize(FILE_TRAILER);
+    return ret;
+}
+
+char *Backup::fileData(const char *filename)
+{
+    char *ret = nullptr;
+    uint32_t sz = fileSize(filename);
+    if (sz > 0)
+    {
+        FILE *f = fopen(filename, "r");
+        if (f)
+        {
+            ret = new char[sz + 1];
+            int nn = fread(ret, 1, sz, f);
+            if (nn == sz)
+            {
+                ret[sz] = 0;
+            }
+            else
+            {
+                delete [] ret;
+                ret = nullptr;
+            }
+            fclose(f);
+        }
     }
     return ret;
 }

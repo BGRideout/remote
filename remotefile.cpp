@@ -132,15 +132,18 @@ void RemoteFile::outputJSON(std::ostream &strm) const
 bool RemoteFile::saveFile() const
 {
     bool ret = false;
+    std::ostringstream out;
+    outputJSON(out);
+    const std::string &data = out.str();
+    size_t dl = data.length();
+
     FILE *f = fopen(filename_.str(), "w");
     if (f)
     {
         ret = true;
-        std::ostringstream out;
-        outputJSON(out);
-        size_t n = fwrite(out.str().c_str(), out.str().size(), 1, f);
+        size_t n = fwrite(data.c_str(), 1, dl, f);
         int sts = fclose(f);
-        if (n != 1 || sts != 0)
+        if (n != dl || sts != 0)
         {
             printf("Failed to write file %s: n=%d sts=%d\n", filename_.str(), n, sts);
             ret = false;

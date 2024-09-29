@@ -4,6 +4,7 @@
 #define BACKUP_H
 
 #include "httprequest.h"
+#include <stdint.h>
 #include <tiny-json.h>
 
 class WEB;
@@ -11,8 +12,13 @@ class WEB;
 class Backup
 {
 private:
+    static const char *hdrs[];        // Header segments
 
     static bool loadBackupFile(const json_t *json, const char *filename);
+
+    static uint32_t fileSize(const char *filename);
+    static uint32_t fileSegmentSize(const char *filename);
+    static char *fileData(const char *filename);
 
 public:
 

@@ -88,7 +88,7 @@ bool Remote::setup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &cl
 
 bool Remote::setup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
-    rqst.printPostData();
+    //rqst.printPostData();
     bool ret = false;
     std::string url = rqst.root();
     std::smatch match;
@@ -212,7 +212,7 @@ bool Remote::setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool
 
 bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
-    rqst.printPostData();
+    //rqst.printPostData();
     bool ret = false;
     std::string url = rqst.root();
     std::smatch match;
@@ -337,12 +337,12 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
                     button->insertAction(before);
                 }
             }
+        }
 
-            const char *btn = rqst.postValue("button");
-            if (btn && strcmp(btn, "done") == 0)
-            {
-                url = base_url + "/setup";
-            }
+        const char *btn = rqst.postValue("button");
+        if (btn && strcmp(btn, "done") == 0)
+        {
+            url = base_url + "/setup";
         }
 
         std::string resp("HTTP/1.1 303 OK\r\nLocation: " + url + "\r\n"
@@ -410,7 +410,7 @@ bool Remote::prompt_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
 
 bool Remote::prompt_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
 {
-    rqst.printPostData();
+    //rqst.printPostData();
     const char *editurl = rqst.postValue("editurl");
     const char *rqsturl = rqst.postValue("rqsturl");
     const char *choice = rqst.postValue("choice");

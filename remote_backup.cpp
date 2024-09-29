@@ -52,7 +52,7 @@ bool Remote::backup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &
 {
     bool ret = false;
     close = false;
-    rqst.printPostData();
+    //rqst.printPostData();
     std::string msg("Success");
     std::string button = rqst.postValue("button");
     if (button == "upload")
