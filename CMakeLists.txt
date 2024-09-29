@@ -33,7 +33,7 @@ add_subdirectory(${PICO_SDK_PATH}/../tiny-json tiny-json)
 add_subdirectory(../picolibs picolibs)
 
 add_executable(${PROJECT_NAME} 
-    remote.cpp
+    remote.cpp remote_remote.cpp remote_backup.cpp remote_setup.cpp
 	remotefile.cpp
 	menu.cpp
 	irprocessor.cpp
