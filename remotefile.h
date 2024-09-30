@@ -239,9 +239,9 @@ public:
     /**
      * @brief   Enumerate the action files
      * 
-     * @details Action files start with "action" or "menu_" and end with ".json"
+     * @details Action files start with "action" and end with ".json"
      * 
-     * @param   files       Vector to receive file names
+     * @param   files       Vector to receive file names (not cleared first)
      * 
      * @return  Count of files found
      */

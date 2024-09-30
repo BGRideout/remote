@@ -6,12 +6,12 @@
 int Command::count_ = 0;
 
 Command::Command(WEB *web, void *client, const JSONMap &msgmap, const RemoteFile::Button *button)
-    :web_(web), client_(client), duration_(0.0), repeat_(0), row_(0)
+    :web_(web), client_(client), button_(0), duration_(0.0), repeat_(0), row_(0)
 {
-    button_ = button->position();
     url_ = msgmap.strValue("path", "");
-    if (msgmap.hasProperty("btnVal"))
+    if (button && msgmap.hasProperty("btnVal"))
     {
+        button_ = button->position();
         action_ = msgmap.strValue("action", "");
         duration_ = msgmap.realValue("duration");
 

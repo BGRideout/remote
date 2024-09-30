@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Menu Action Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="/webremote.css" />
+  <script type="text/javascript" src="/setupbtn.js"></script>
+  <script type="text/javascript" src="/websocket.js"></script>
+ </head>
+ <body>
+  <h1>Menu Action Editor</h1>
+  <div>
+   <p>
+   <form id="selForm" method="post">
+    Choose menu:
+    <select name="sel" onchange="submit();">
+     <option value="">-- New --</option>
+     <?menus?>
+    </select>
+   </form>
+   </p>
+   <form id="actForm" method="post">
+    <p><label for="name">Menu name: </label><input type="text" id="name" name="name" value="<?menuname?>" <?readonly?></p>
+    <input type="hidden" name="original" value="<?menuname?>">
+    <p>
+    <table>
+    <thead>
+     <tr>
+      <th></th>
+      <th>Proto</th>
+      <th>Addr</th>
+      <th>Cmd</th>
+      <th>Wait ms</th>
+     </tr>
+    </thead>
+    <tbody id="steps">
+     <tr>
+      <td class="lbl">open</td>
+      <td><input type="text" name="typ" value="<?opentyp?>" /></td>
+      <td><input type="number" name="add" value="<?openadd?>" /></td>
+      <td><input type="number" name="val" value="<?openval?>" /></td>
+      <td><input type="number" name="dly" value="<?opendly?>" /></td>
+      <td><button type="button" name="btn" onclick="load_ir(0);" value="open">&lt;-IR</button></td>
+     </tr>
+     <tr>
+      <td class="lbl">up</td>
+      <td><input type="text" name="typ" value="<?uptyp?>" /></td>
+      <td><input type="number" name="add" value="<?upadd?>" /></td>
+      <td><input type="number" name="val" value="<?upval?>" /></td>
+      <td><input type="number" name="dly" value="<?updly?>" /></td>
+      <td><button type="button" name="btn" onclick="load_ir(1);" value="up">&lt;-IR</button></td>
+     </tr>
+     <tr>
+      <td class="lbl">down</td>
+      <td><input type="text" name="typ" value="<?downtyp?>" /></td>
+      <td><input type="number" name="add" value="<?downadd?>" /></td>
+      <td><input type="number" name="val" value="<?downval?>" /></td>
+      <td><input type="number" name="dly" value="<?downdly?>" /></td>
+      <td><button type="button" name="btn" onclick="load_ir(2);" value="down">&lt;-IR</button></td>
+     </tr>
+     <tr>
+      <td class="lbl">left</td>
+      <td><input type="text" name="typ" value="<?lefttyp?>" /></td>
+      <td><input type="number" name="add" value="<?leftadd?>" /></td>
+      <td><input type="number" name="val" value="<?leftval?>" /></td>
+      <td><input type="number" name="dly" value="<?leftdly?>" /></td>
+      <td><button type="button" name="btn" onclick="load_ir(3);" value="left">&lt;-IR</button></td>
+     </tr>
+     <tr>
+      <td class="lbl">right</td>
+      <td><input type="text" name="typ" value="<?righttyp?>" /></td>
+      <td><input type="number" name="add" value="<?rightadd?>" /></td>
+      <td><input type="number" name="val" value="<?rightval?>" /></td>
+      <td><input type="number" name="dly" value="<?rightdly?>" /></td>
+      <td><button type="button" name="btn" onclick="load_ir(4);" value="right">&lt;-IR</button></td>
+     </tr>
+     <tr>
+      <td class="lbl">ok</td>
+      <td><input type="text" name="typ" value="<?oktyp?>" /></td>
+      <td><input type="number" name="add" value="<?okadd?>" /></td>
+      <td><input type="number" name="val" value="<?okval?>" /></td>
+      <td><input type="number" name="dly" value="<?okdly?>" /></td>
+      <td><button type="button" name="btn" onclick="load_ir(5);" value="ok">&lt;-IR</button></td>
+     </tr>
+    </tbody>
+    </table>
+    </p>
+    <p>
+     <label for="rows">Rows per column: </label><input id="rows" type="text" name="rows" value="<?rowspercol?>">
+    </p>
+    <p>
+     <button type="submit" name="btn" value="update">Update</button>
+    </p>
+   </form>
+   <p id="irget" class="irget">&nbsp;</p>
+  </div>
+ </body>
+</html>

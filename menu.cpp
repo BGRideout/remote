@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <sstream>
 
 std::map<std::string, Menu *> Menu::menus_;
@@ -182,6 +183,7 @@ bool Menu::saveFile() const
     bool ret = false;
     std::string filename("menu_");
     filename += name_;
+    filename += ".json";
     FILE *f = fopen(filename_.c_str(), "w");
     if (f)
     {
@@ -195,6 +197,91 @@ bool Menu::saveFile() const
             printf("Failed to write file %s: n=%d sts=%d\n", filename_.c_str(), n, sts);
             ret = false;
         }
+    }
+    return ret;
+}
+
+Menu *Menu::getMenu(const std::string &name)
+{
+    Menu *ret = nullptr;
+    auto it = menus_.find(name);
+    if (it == menus_.end())
+    {
+        std::pair<std::map<std::string, Menu *>::iterator, bool> ins = menus_.emplace(name, new Menu());
+        it = ins.first;
+        ret = it->second;
+        if (!ret->loadMenu(name.c_str()))
+        {
+            delete ret;
+            menus_[name] = nullptr;
+            printf("'%s' is not a menu\n", name.c_str());
+        }
+    }
+
+    ret = it->second;
+    return ret;
+}
+
+Menu *Menu::addMenu(const std::string &name)
+{
+    Menu *ret = getMenu(name);
+    if (!ret)
+    {
+        ret = new Menu();
+        ret->setName(name);
+        menus_[name] = ret;
+    }
+    return ret;
+}
+
+void Menu::setIRCode(const std::string &op, const std::string &type, uint16_t address, uint16_t value, uint16_t delay)
+{
+    auto it = commands_.find(op);
+    if (it != commands_.end())
+    {
+        Command::Step &step = it->second;
+        step.setType(type);
+        step.setAddress(address);
+        step.setValue(value);
+        step.setDelay(delay);
+    }
+}
+
+std::string Menu::rowsPerColumn() const
+{
+    std::string ret;
+    std::string sep;
+    for (auto it = rows_.cbegin(); it != rows_.cend(); ++it)
+    {
+        ret += sep + std::to_string(*it);
+        sep = ",";
+    }
+    return ret;
+}
+
+bool Menu::setRowsPerColumn(const std::string &rowspercol)
+{
+    bool ret = false;
+    std::vector<std::string> srows;
+    TXT::split(rowspercol, ",", srows);
+    std::vector<int> rows;
+    try
+    {
+        for (auto it = srows.cbegin(); it != srows.cend(); ++it)
+        {
+            rows.push_back(std::stoul(it->c_str()));
+        }
+
+        if (rows != rows_)
+        {
+            rows_ = rows;
+            reset();
+        }
+        ret = true;
+    }
+    catch(const std::exception& e)
+    {
+        printf("Error %s converting rows per column %s\n", e.what(), rowspercol.c_str());
     }
     return ret;
 }
@@ -269,21 +356,8 @@ bool Menu::getMenuSteps(const Command::Step &step, std::deque<Command::Step> &st
     bool ret = false;
     std::size_t i1 = step.type().find('.');
     std::string name = step.type().substr(0, i1);
-    auto it = menus_.find(name);
-    if (it == menus_.end())
-    {
-        std::pair<std::map<std::string, Menu *>::iterator, bool> ins = menus_.emplace(name, new Menu());
-        it = ins.first;
-        Menu *menu = it->second;
-        if (!menu->loadMenu(name.c_str()))
-        {
-            delete menu;
-            menus_[name] = nullptr;
-            printf("'%s' is not a menu\n", name.c_str());
-        }
-    }
 
-    Menu *menu = it->second;
+    Menu *menu = getMenu(name);
     if (menu)
     {
         ret = menu->getSteps(step, steps);
@@ -424,4 +498,38 @@ void Menu::add_step(const std::string &op, std::deque<Command::Step> &steps)
     {
         steps.push_back(it->second);
     }
+}
+
+int Menu::menuFiles(std::vector<std::string> &files)
+{
+    int nf = files.size();
+    DIR *dir = opendir("/");
+    if (dir)
+    {
+        std::string file;
+        struct dirent *ent = readdir(dir);
+        while (ent)
+        {
+            file = ent->d_name;
+            if (file.length() >= 10 &&
+                (file.substr(0, 5) == "menu_") &&
+                file.substr(file.length() - 5) == ".json")
+            {
+                files.push_back(file);
+            }
+            ent = readdir(dir);
+        }
+    }
+    return files.size() - nf;
+}
+
+int Menu::menuNames(std::vector<std::string> &names)
+{
+    menuFiles(names);
+    for (auto it = names.begin(); it != names.end(); ++it)
+    {
+        it->erase(it->length() - 5);
+        it->erase(0, 5);
+    }
+    return names.size();
 }

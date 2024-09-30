@@ -4,6 +4,7 @@
 #include "backup.h"
 #include "command.h"
 #include "config.h"
+#include "menu.h"
 #include "txt.h"
 #include "web_files.h"
 
@@ -20,6 +21,7 @@ bool Remote::backup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
 
         std::vector<std::string> action_files;
         RemoteFile::actionFiles(action_files);
+        Menu::menuFiles(action_files);
         for (auto it = action_files.cbegin(); it != action_files.cend(); ++it)
         {
             files += "<option value='" + *it + "'>";

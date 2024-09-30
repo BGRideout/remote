@@ -140,7 +140,7 @@ bool Remote::setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool
     {
         std::string base_url = match[1].str();
         if (base_url.empty()) base_url = "/";
-        int pos = std::atoi(match[3].str().c_str());
+        int pos = to_u16(match[3].str());
         printf("GET '%s' button at %d\n", base_url.c_str(), pos);
 
         ret = get_efile(base_url, web, client, rqst, close);
@@ -191,9 +191,9 @@ bool Remote::setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool
             {
                 action = "<tr>";
                 action += "<td><input type=\"text\" name=\"typ\" value=\"" + std::string(it->type()) + "\" /></td>";
-                action += "<td><input type=\"text\" name=\"add\" value=\"" + std::to_string(it->address()) + "\" /></td>";
-                action += "<td><input type=\"text\" name=\"val\" value=\"" + std::to_string(it->value()) + "\" /></td>";
-                action += "<td><input type=\"text\" name=\"dly\" value=\"" + std::to_string(it->delay()) + "\" /></td>";
+                action += "<td><input type=\"number\" name=\"add\" value=\"" + std::to_string(it->address()) + "\" /></td>";
+                action += "<td><input type=\"number\" name=\"val\" value=\"" + std::to_string(it->value()) + "\" /></td>";
+                action += "<td><input type=\"number\" name=\"dly\" value=\"" + std::to_string(it->delay()) + "\" /></td>";
                 action += "<td><button type=\"submit\" name=\"add_row\" value=\"" + std::to_string(row) + "\">+</button></td>";
                 action += "<td><button type=\"button\" onclick=\"load_ir(" + std::to_string(row) + ");\">&lt;-IR</button></td>";
                 action += "</tr>";
@@ -220,7 +220,7 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
     if (std::regex_match(url, match, reg))
     {
         std::string base_url = match[1].str();
-        int pos = std::atoi(match[3].str().c_str());
+        int pos = to_u16(match[3].str());
         printf("POST '%s' button at %d\n", base_url.c_str(), pos);
 
         ret = get_efile(base_url, web, client, rqst, close);
@@ -262,12 +262,12 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
             if (value) button->setRedirect(value);
 
             value = rqst.postValue("repeat");
-            if (value) button->setRepeat(atoi(value));
+            if (value) button->setRepeat(to_u16(value));
 
             value = rqst.postValue("swap");
             if (value)
             {
-                int newpos = atoi(value);
+                int newpos = to_u16(value);
                 if (newpos != pos && newpos > 0 && newpos <= 100)
                 {
                     efile_.changePosition(button, newpos);
@@ -292,9 +292,9 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
                 for (int seqno = 0; seqno < nn; seqno++)
                 {
                     const char *type = typ.at(seqno);
-                    int address = atoi(add.at(seqno));
-                    int value = atoi(val.at(seqno));
-                    int delay = atoi(dly.at(seqno));
+                    int address = to_u16(add.at(seqno));
+                    int value = to_u16(val.at(seqno));
+                    int delay = to_u16(dly.at(seqno));
 
                     if (!type || *type == 0)
                     {
@@ -331,7 +331,7 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
             const char *add_row = rqst.postValue("add_row");
             if (add_row)
             {
-                int before = atoi(add_row);
+                int before = to_u16(add_row);
                 if (before >= 0 && before < button->actions().size())
                 {
                     button->insertAction(before);
@@ -367,7 +367,7 @@ bool Remote::setup_ir_get(WEB *web, void *client, const JSONMap &msgmap)
     if (std::regex_match(url, match, reg))
     {
         std::string base_url = match[1].str();
-        int pos = std::atoi(match[3].str().c_str());
+        int pos = to_u16(match[3].str().c_str());
         printf("IR_Get '%s' button %d row %d\n", base_url.c_str(), pos, row);
 
         ret = get_efile(base_url);

@@ -46,6 +46,59 @@ public:
     void clear() { name_.clear(), commands_.clear(); rows_.clear(), colrow_.clear(); }
 
     const std::string &name() const { return name_; }
+    void setName(const std::string &name) { name_ = name; }
+
+    /**
+     * @brief   Add a new menu
+     * 
+     * @param   name    Name of new menu
+     * 
+     * @return  Pointer to new menu or existing if name already defined
+     */
+    static Menu *addMenu(const std::string &name);
+
+    /**
+     * @brief   Get a menu by name
+     * 
+     * @param   name    Name of the menu
+     * 
+     * @return  Pointer to menu or null if name not valid
+     */
+    static Menu *getMenu(const std::string &name);
+
+    /**
+     * @brief   Get the menu's command map
+     * 
+     * @return  Map of step by operation (open, up, down, left, right, ok)
+     */
+    const std::map<std::string, Command::Step> &commands() const { return commands_; }
+
+    /**
+     * @brief   Set the IR code for an operation
+     * 
+     * @param   op      Operation (open, up, down, left, right, ok)
+     * @param   type    IR type
+     * @param   address IR address
+     * @param   value   IR command value
+     * @param   delay   Delay in msec following IR code send
+     */
+    void setIRCode(const std::string &op, const std::string &type, uint16_t address, uint16_t value, uint16_t delay);
+
+    /**
+     * @brief   Get the rows per column as a comma separated string
+     * 
+     * @return  comma separated string
+     */
+    std::string rowsPerColumn() const;
+
+    /**
+     * @brief   Set the rows per column from comma separated string
+     * 
+     * @param   rowspercol  String containing rows per column separated by commas
+     * 
+     * @return  true if data set, false if badly formatted string
+     */
+    bool setRowsPerColumn(const std::string &rowspercol);
 
     /**
      * @brief   Get the steps for a menu action
@@ -62,6 +115,26 @@ public:
      * @brief   Reset the position of the menu
      */
     void reset() { curcol_ = -1; colrow_.assign(rows_.size(), -1); }
+
+    /**
+     * @brief   Enumerate the menu files
+     * 
+     * @details Action files start with "menu_" and end with ".json"
+     * 
+     * @param   files       Vector to receive file names (not cleared first)
+     * 
+     * @return  Count of files found
+     */
+    static int menuFiles(std::vector<std::string> &files);
+
+    /**
+     * @brief   Enumerate the menu names
+     * 
+     * @param   names       Vector to receive menu names
+     * 
+     * @return  Count of menus found
+     */
+    static int menuNames(std::vector<std::string> &names);
 };
 
 #endif

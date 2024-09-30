@@ -32,6 +32,7 @@ struct Remote::URLPROC Remote::funcs[] =
     {
         {std::regex("^/index(|\\.html)$", std::regex_constants::extended), &Remote::remote_get, nullptr},
         {std::regex("^/backup(|\\.html)$", std::regex_constants::extended), &Remote::backup_get, &Remote::backup_post},
+        {std::regex("^/menu(|\\.html)$", std::regex_constants::extended), &Remote::menu_get, &Remote::menu_post},
         {std::regex("^(.*)/setup(|\\.html)$", std::regex_constants::extended), &Remote::setup_get, &Remote::setup_post},
         {std::regex("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended), &Remote::setup_btn_get, &Remote::setup_btn_post},
         {std::regex("^/editprompt(|\\.html)$", std::regex_constants::extended), &Remote::prompt_get, &Remote::prompt_post}
@@ -157,7 +158,14 @@ void Remote::ws_message(WEB *web, void *client, const std::string &msg)
     }
     else if (msgmap.hasProperty("ir_get"))
     {
-        setup_ir_get(web, client, msgmap);
+        if (strcmp(msgmap.strValue("path", ""), "/menu") == 0)
+        {
+            menu_ir_get(web, client, msgmap);
+        }
+        else
+        {
+            setup_ir_get(web, client, msgmap);
+        }
     }
     else
     {
@@ -319,6 +327,31 @@ void Remote::button_event(struct Button::ButtonEvent &ev)
     }
 }
 
+uint16_t Remote::to_u16(const std::string &str)
+{
+    uint16_t ret = 0;
+    if (!str.empty())
+    {
+        try
+        {
+            uint32_t val = std::stoul(str);
+            if (val <= 0xffff)
+            {
+                ret = static_cast<uint16_t>(val);
+            }
+            else
+            {
+                throw std::out_of_range("too big for uint16_t");
+            }
+        }
+        catch(const std::exception& e)
+        {
+            printf("Error %s converting %s to uint16_t\n", e.what(), str.c_str());
+        }
+    }
+    return ret;
+}
+
 //      *****  Indicator  *****
 
 Remote::Indicator::Indicator(int led_gpio) : ir_busy_(false), web_state_(0), ap_state_(false)
@@ -402,6 +435,7 @@ int main ()
         return -1;
     }
 
+    Remote::get()->cleanupFiles();
     Remote::get()->init(INDICATOR_GPIO, BUTTON_GPIO);
 
     IR_Processor *ir = new IR_Processor(Remote::get(), IR_SEND_GPIO, IR_RCV_GPIO);

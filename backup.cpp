@@ -135,6 +135,7 @@ bool Backup::saveBackup(WEB *web, void *client, const HTTPRequest &rqst)
         downloadFile = CONFIG::get()->hostname();
         downloadFile += ".json";
         RemoteFile::actionFiles(files);
+        Menu::menuFiles(files);
     }
     else
     {

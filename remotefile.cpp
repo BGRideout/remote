@@ -532,7 +532,7 @@ void RemoteFile::Button::Action::clear()
 
 int RemoteFile::actionFiles(std::vector<std::string> &files)
 {
-    files.clear();
+    int nf = files.size();
     DIR *dir = opendir("/");
     if (dir)
     {
@@ -542,7 +542,7 @@ int RemoteFile::actionFiles(std::vector<std::string> &files)
         {
             file = ent->d_name;
             if (file.length() >= 10 &&
-                (file.substr(0, 7) == "actions" || file.substr(0, 5) == "menu_") &&
+                (file.substr(0, 7) == "actions") &&
                 file.substr(file.length() - 5) == ".json")
             {
                 files.push_back(file);
@@ -550,7 +550,7 @@ int RemoteFile::actionFiles(std::vector<std::string> &files)
             ent = readdir(dir);
         }
     }
-    return files.size();
+    return files.size() - nf;
 }
 
 std::string RemoteFile::urlToAction(const std::string &path)

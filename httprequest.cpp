@@ -24,7 +24,14 @@ bool HTTPRequest::parseRequest(std::string &rqst, bool parsePostData)
         if (index > 0)
         {
             std::string valstr = header(index).second;
-            cl = std::stoi(valstr);
+            try
+            {
+                cl = std::stoul(valstr);
+            }
+            catch(const std::exception& e)
+            {
+                printf("Bad Content-Length %s\n", valstr.c_str());
+            }
         }
         body_offset_ = i2 + 2;
         body_size_ = rqst.size() - body_offset_;

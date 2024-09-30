@@ -72,6 +72,9 @@ private:
     bool setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool setup_ir_get(WEB *web, void *client, const JSONMap &msgmap);
+    bool menu_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool menu_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool menu_ir_get(WEB *web, void *client, const JSONMap &msgmap);
     bool prompt_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool prompt_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
 
@@ -82,6 +85,8 @@ private:
 
     static void get_replies(async_context_t *context, async_when_pending_worker_t *worker);
     void get_replies();
+
+    uint16_t to_u16(const std::string &str);
 
     static Remote *singleton_;
     Remote() : indicator_(nullptr) {}
@@ -105,6 +110,17 @@ public:
     static void ir_busy(bool busy);
     static void web_state(int state);
     static void button_event(struct Button::ButtonEvent &ev);
+
+    /**
+     * @brief   Cleanup files
+     * 
+     * @details Remove any action files not referenced by redirects
+     *          Remove menu files not referenced by commands
+     *          Add missing action or menu files
+     *          Recreate files that will not load
+     *          Remove unknown files
+     */
+    void cleanupFiles();
 };
 
 #endif
