@@ -117,6 +117,10 @@ bool Remote::get_efile(const std::string &url, WEB *web, void *client, const HTT
     if (!efile_.isModified() || RemoteFile::urlToAction(url) == efile_.filename())
     {
         ret = efile_.loadForURL(url);
+        if (!ret)
+        {
+            web->send_data(client, "HTTP/1.0 404 NOT_FOUND\r\n\r\n", 26);
+        }
     }
     else
     {
@@ -129,7 +133,6 @@ bool Remote::get_efile(const std::string &url, WEB *web, void *client, const HTT
                          "Connection: keep-alive\r\n\r\n");
         web->send_data(client, resp.c_str(), resp.length());
         close = false;
-        ret = true;
     }
     return ret;
 }
@@ -140,7 +143,7 @@ bool Remote::http_message(WEB *web, void *client, const HTTPRequest &rqst, bool 
  
     if (rqst.type() == "GET")
     {
-        ret = http_get(web, client, rqst,close);
+        ret = http_get(web, client, rqst, close);
     }
     else if (rqst.type() == "POST")
     {
