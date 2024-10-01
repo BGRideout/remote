@@ -37,7 +37,15 @@ bool JSONMap::load()
     int jsz = strlen(data_) / 4;
     json_ = new json_t[jsz];
     json_t const* json = json_create(data_, json_, jsz );
-    return json != nullptr;
+    bool ret = json != nullptr;
+    if (!ret)
+    {
+        delete [] data_;
+        data_ = new char[8];
+        strncpy(data_, "{}", 8);
+        json = json_create(data_, json_, jsz );
+    }
+    return ret;
 }
 
 const json_t *JSONMap::findProperty(const char *name) const

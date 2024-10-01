@@ -3,24 +3,24 @@
  <head>
   <title>WiFi Setup</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" type="text/css" href="/web.css" />
+  <link rel="stylesheet" type="text/css" href="/webremote.css" />
   <script type="text/javascript" src="/webremote.js"></script>
   <script type="text/javascript" src="/websocket.js"></script>
   <script type="text/javascript" src="/config.js"></script>
  </head>
  <body>
   <h1>WiFi Setup</h1>
-  <form class="config" id="lanForm" method="post">
-   <label for='hostname'>Host name</label><input type='text' id='hostname' name='hostname' value='%s'/>
-    <span></span>
-   <label for='ssid'>WiFi name</label><input type='text' id='ssid' name='ssid' value='%s'/>
-    <button type='submit' name='button' value='scan'>Scan</button>
-   %s
-   <label for='pwd'>Password</label><input type='%s' id='pwd' name='pwd' value='%s'/>
-    <button type='submit' name='button' value='show'>Show</button>
-   <label for='ip'>IP address</label><span id='ip' class='ip'>%s</span><span></span>
-   <button type='submit' name='button' value='update'>Update</button><span></span>%s
-  </form>
- </body>
+  <div class='config'>
+    <label for='hostname'>Host name</label><input type='text' id='hostname' name='hostname' value=''>
+     <span></span>
+    <label for='ssid'>WiFi name</label><input type='text' id='ssid' name='ssid' value=''><span></span>
+    <span></span><select id='ssids'><option value=''>-- Scan WiFi access points --</option></select>
+     <button type='button' name='button' id='scan' value='scan'>Scan</button>
+    <label for='pwd'>Password</label><input type='password' id='pwd' name='pwd' value=''>
+     <span></span>
+    <label for='ip'>IP address</label><span id='ip' class='ip'></span><span></span>
+    <button type='button' name='button' id='update' value='update'>Update</button>
+   </div>
+  </body>
 </html>
 

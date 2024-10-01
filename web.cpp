@@ -184,7 +184,13 @@ err_t WEB::tcp_server_recv(void *arg, struct altcp_pcb *tpcb, struct pbuf *p, er
                 {
                     web->process_websocket(ci->second);
                 }
-                ci->second.resetRqst();
+
+                //  Look up again in case client was closed
+                ci = web->clients_.find(tpcb);
+                if (ci != web->clients_.end())
+                {
+                    ci->second.resetRqst();
+                }
             }
         }
     }
