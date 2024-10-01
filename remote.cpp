@@ -56,6 +56,11 @@ bool Remote::init(int indicator_gpio, int button_gpio)
     web->set_message_callback(ws_message_);
     web->set_notice_callback(web_state);
     bool ret = web->init();
+    if (ret)
+    {
+        CONFIG *cfg = CONFIG::get();
+        ret = web->connect_to_wifi(cfg->hostname(), cfg->ssid(), cfg->password());
+    }
 
     const char *data;
     u16_t datalen;
@@ -155,24 +160,28 @@ bool Remote::http_message(WEB *web, void *client, const HTTPRequest &rqst, bool 
 void Remote::ws_message(WEB *web, void *client, const std::string &msg)
 {
     JSONMap msgmap(msg.c_str());
-    if (msgmap.hasProperty("btnVal"))
+    const char *func = msgmap.strValue("func");
+    if (func)
     {
-        remote_button(web, client, msgmap);
-    }
-    else if (msgmap.hasProperty("ir_get"))
-    {
-        if (strcmp(msgmap.strValue("path", ""), "/menu") == 0)
+        if (strcmp(func, "btnVal") == 0)
         {
-            menu_ir_get(web, client, msgmap);
+            remote_button(web, client, msgmap);
+        }
+        else if (strcmp(func, "ir_get") == 0)
+        {
+            if (strncmp(msgmap.strValue("path", ""), "/menu", 5) == 0)
+            {
+                menu_ir_get(web, client, msgmap);
+            }
+            else
+            {
+                setup_ir_get(web, client, msgmap);
+            }
         }
         else
         {
-            setup_ir_get(web, client, msgmap);
+            printf("Message processor not found for %s\n", msg.c_str());
         }
-    }
-    else
-    {
-        printf("Message processor not found for %s\n", msg.c_str());
     }
 }
 

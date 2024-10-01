@@ -97,7 +97,7 @@ function processPointerEvent(event)
                     showLED("on");
                 }
                 
-                sendToWS('{"btnVal": "' + ele.value +
+                sendToWS('{"func": "btnVal", "btnVal": "' + ele.value +
                           '", "action": "' + action +
                           '", "duration": "' + dur +
                           '", "path": "' + document.location.pathname + '" }');
@@ -108,7 +108,7 @@ function processPointerEvent(event)
             if (event_time !== undefined)
             {
                 let dur = event.timeStamp - event_time;
-                sendToWS('{"btnVal": "' + ele.value +
+                sendToWS('{"func": "btnVal", "btnVal": "' + ele.value +
                           '", "action": "' + 'cancel' +
                           '", "duration": "' + dur +
                           '", "path": "' + document.location.pathname + '" }');
@@ -126,7 +126,7 @@ function processPointerEvent(event)
 function start_hold(ix)
 {
     click_timer = undefined
-    sendToWS('{"btnVal": "' + ix + '", ' +
+    sendToWS('{"func": "btnVal", "btnVal": "' + ix + '", ' +
               '"action": "press", ' +
               '"path": "' + document.location.pathname + '" }');
 }

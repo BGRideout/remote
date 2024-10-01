@@ -11,7 +11,7 @@ function load_ir(row)
     let ntc = document.getElementById("irget");
     ntc.innerHTML = "Click button on remote";
 
-    let msg = '{"ir_get": ' + row + ', "path": "' + document.location.pathname + '"}'
+    let msg = '{"func": "ir_get", "ir_get": ' + row + ', "path": "' + document.location.pathname + '"}'
     console.log(msg);
     sendToWS(msg);
 

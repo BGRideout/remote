@@ -1,7 +1,6 @@
 #include "web.h"
 #include "ws.h"
 #include "txt.h"
-#include "config.h"
 
 #include "stdio.h"
 
@@ -41,12 +40,6 @@ bool WEB::init()
     uint32_t pm;
     cyw43_wifi_get_pm(&cyw43_state, &pm);
     printf("Power mode: %x\n", pm);
-
-    if (!connect_to_wifi())
-    {
-        printf("failed to connect.\n");
-        return 1;
-    }
 
     mdns_resp_init();
 
@@ -105,12 +98,27 @@ bool WEB::init()
     return true;
 }
 
-bool WEB::connect_to_wifi()
+bool WEB::connect_to_wifi(const std::string &hostname, const std::string &ssid, const std::string &password)
 {
-    CONFIG *cfg = CONFIG::get();
-    printf("Connecting to Wi-Fi on SSID '%s' ...\n", cfg->ssid());
-    netif_set_hostname(wifi_netif(CYW43_ITF_STA), cfg->hostname());
-    return cyw43_arch_wifi_connect_async(cfg->ssid(), cfg->password(), CYW43_AUTH_WPA2_AES_PSK) == 0;
+    hostname_ = hostname;
+    wifi_ssid_ = ssid;
+    wifi_pwd_ = password;
+    printf("Host '%s' connecting to Wi-Fi on SSID '%s' ...\n", hostname_.c_str(), wifi_ssid_.c_str());
+    netif_set_hostname(wifi_netif(CYW43_ITF_STA), hostname_.c_str());
+    bool ret = cyw43_arch_wifi_connect_async(wifi_ssid_.c_str(), wifi_pwd_.c_str(), CYW43_AUTH_WPA2_AES_PSK) == 0;
+    return ret;
+}
+
+bool WEB::update_wifi(const std::string &hostname, const std::string &ssid, const std::string &password)
+{
+    bool ret = true;
+    if (hostname != hostname_ || ssid != wifi_ssid_ || password != wifi_pwd_)
+    {
+        cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
+        ret = connect_to_wifi(hostname, ssid, password);
+        mdns_resp_rename_netif(wifi_netif(CYW43_ITF_STA), hostname_.c_str());
+    }
+    return ret;
 }
 
 err_t WEB::tcp_server_accept(void *arg, struct altcp_pcb *client_pcb, err_t err)
@@ -413,20 +421,7 @@ void WEB::process_websocket(CLIENT &client)
             }
         }
 
-        if (func == "get_wifi")
-        {
-            get_wifi(client.pcb());
-        }
-        else if (func == "scan_wifi")
-        {
-            if (isDebug(1)) printf("Scan WiFi\n");
-            scan_wifi(client.pcb());
-        }
-        else if (func == "config_update")
-        {
-            update_wifi(payload);
-        }
-        else if (message_callback_)
+        if (message_callback_)
         {
             message_callback_(this, &client, payload);
         }
@@ -539,10 +534,9 @@ void WEB::check_wifi()
             {
                 mdns_resp_remove_netif(ni);
             }
-            mdns_resp_add_netif(ni, CONFIG::get()->hostname());
+            mdns_resp_add_netif(ni, hostname_.c_str());
             mdns_resp_announce(ni);
             mdns_active_ = true;
-            get_wifi(nullptr);
             printf("Connected to WiFi with IP address %s\n", ip4addr_ntoa(netif_ip4_addr(ni)));
             send_notice(STA_CONNECTED);
             break;
@@ -579,89 +573,7 @@ void WEB::check_wifi()
     }
 }
 
-void WEB::get_wifi(struct altcp_pcb *client_pcb)
-{
-    CONFIG *cfg = CONFIG::get();
-    std::string wifi("{\"host\":\"<h>\", \"ssid\":\"<s>\", \"ip\":\"<a>\"}");
-    TXT::substitute(wifi, "<h>", cfg->hostname());
-    TXT::substitute(wifi, "<s>", cfg->ssid());
-    TXT::substitute(wifi, "<a>", ip4addr_ntoa(netif_ip4_addr(wifi_netif(CYW43_ITF_STA))));
-    if (client_pcb)
-    {
-        send_websocket(client_pcb, WEBSOCKET_OPCODE_TEXT, wifi);
-    }
-    else
-    {
-        broadcast_websocket(wifi);
-    }
-    scan_wifi(client_pcb);
-}
-
-void WEB::update_wifi(const std::string &cmd)
-{
-    CONFIG *cfg = CONFIG::get();
-    std::string hostname;
-    std::string ssid;
-    std::string password = cfg->password();
-    std::string title = cfg->title();
-
-    std::vector<std::string> items;
-    TXT::split(cmd, " ", items);
-    for (auto it = items.cbegin(); it != items.cend(); ++it)
-    {
-        std::vector<std::string> item;
-        TXT::split(*it, "=", item);
-        std::string name = item.at(0);
-        std::string value = "";
-        if (item.size() > 1)
-        {
-            value = HTTPRequest::uri_decode(item.at(1));
-        }
-        if (name == "hostname")
-        {
-            hostname = value;
-        }
-        else if (name == "ssid")
-        {
-            ssid = value;
-        }
-        else if (name == "pwd" && value.length() > 0)
-        {
-            password = value;
-        }
-        else if (name == "title")
-        {
-            title = value;
-        }
-    }
-
-    printf("Update: host=%s, ssid=%s, pw=%s, title='%s'\n", hostname.c_str(), ssid.c_str(), password.c_str(), title.c_str());
-
-    bool wifi_change = false;
-    if (hostname != cfg->hostname())
-    {
-        cfg->set_hostname(hostname.c_str());
-        wifi_change = true;
-    }
-    if (ssid != cfg->ssid() || password != cfg->password())
-    {
-        cfg->set_wifi_credentials(ssid.c_str(), password.c_str());
-        wifi_change = true;
-    }
-    if (title != cfg->title())
-    {
-        cfg->set_title(title.c_str());
-    }
-
-    //  Restart the STA WiFi
-    if (wifi_change)
-    {
-        cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
-        connect_to_wifi();
-    }
-}
-
-void WEB::scan_wifi(struct altcp_pcb *client_pcb)
+void WEB::scan_wifi(void *client, WiFiScan_cb callback, void *user_data)
 {
     if (!cyw43_wifi_scan_active(&cyw43_state))
     {
@@ -669,7 +581,8 @@ void WEB::scan_wifi(struct altcp_pcb *client_pcb)
         int sts = cyw43_wifi_scan(&cyw43_state, &opts, this, scan_cb);
         scans_.clear();
     }
-    scans_.insert(client_pcb);
+    ScanRqst rqst = {.client = (CLIENT *)client, .cb = callback, .user_data = user_data };
+    scans_.push_back(rqst);
 }
 
 int WEB::scan_cb(void *arg, const cyw43_ev_scan_result_t *rslt)
@@ -687,28 +600,11 @@ void WEB::check_scan_finished()
 {
     if (scans_.size() > 0 && !cyw43_wifi_scan_active(&cyw43_state))
     {
-        std::string msg("{\"ssids\":\"<option value=''>-- Choose WiFi access point --</option>");
-        if (isDebug(1)) printf("Scan finished (%d):\n", ssids_.size());
-        for (auto it = ssids_.cbegin(); it != ssids_.cend(); ++it)
-        {
-            if (isDebug(1)) printf("  %s\n", it->first.c_str());
-            msg += "<option value='";
-            msg += it->first.c_str();
-            msg += "'>";
-            msg += it->first.c_str();
-            msg += "</option>";
-        }
-        msg += "\"}";
-
         for (auto it = scans_.cbegin(); it != scans_.cend(); ++it)
         {
-            if (*it == nullptr)
+            if (it->cb != nullptr)
             {
-                broadcast_websocket(msg);
-            }
-            else if (clients_.find(*it) != clients_.end())
-            {
-                send_websocket(*it, WEBSOCKET_OPCODE_TEXT, msg);
+                it->cb(this, it->client, ssids_, it->user_data);
             }
         }
 

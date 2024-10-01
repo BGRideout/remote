@@ -3,7 +3,6 @@
 
 #include <list>
 #include <map>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -18,10 +17,17 @@ extern "C"
 #include "httprequest.h"
 #include "ws.h"
 
+class WEB;
+
+typedef std::map<std::string, int> WiFiScanData;    // SSID -> RSSI
+typedef bool (*WiFiScan_cb)(WEB *, void *, const WiFiScanData &, void *);
+
 class WEB
 {
+public:
+
 private:
-    struct altcp_pcb    *server_;                   // Server PCB
+    struct altcp_pcb    *server_;               // Server PCB
 
     class SENDBUF
     {
@@ -98,15 +104,23 @@ private:
 
     void close_client(struct altcp_pcb *client_pcb, bool isClosed = false);
 
-    int  wifi_state_;
-    ip_addr_t wifi_addr_;
-    bool connect_to_wifi();
+    std::string     hostname_;              // Host name
+    std::string     wifi_ssid_;             // WiFi SSID
+    std::string     wifi_pwd_;              // WiFI password
+
+    int             wifi_state_;            // WiFi state
+    ip_addr_t       wifi_addr_;             // WiFi IP address
+
     void check_wifi();
-    void get_wifi(struct altcp_pcb *client_pcb);
-    void update_wifi(const std::string &cmd);
-    std::set<struct altcp_pcb *> scans_;
-    std::map<std::string, int> ssids_;
-    void scan_wifi(struct altcp_pcb *client_pcb);
+
+    struct ScanRqst
+    {
+        CLIENT      *client;
+        WiFiScan_cb cb;
+        void        *user_data;
+    };
+    std::vector<ScanRqst> scans_;
+    WiFiScanData ssids_;
     static int scan_cb(void *arg, const cyw43_ev_scan_result_t *rslt);
     void check_scan_finished();
     repeating_timer_t timer_;
@@ -139,6 +153,8 @@ private:
 public:
     static WEB *get();
     bool init();
+    bool connect_to_wifi(const std::string &hostname, const std::string &ssid, const std::string &password);
+    bool update_wifi(const std::string &hostname, const std::string &ssid, const std::string &password);
 
     void set_http_callback(bool (*cb)(WEB *web, void *client, const HTTPRequest &rqst, bool &close)) { http_callback_ = cb; }
     void set_message_callback(void(*cb)(WEB *web, void *client, const std::string &msg)) { message_callback_ = cb; }
@@ -156,6 +172,8 @@ public:
 
     void enable_ap(int minutes = 30, const std::string &name = "webapp") { ap_requested_ = minutes; ap_name_ = name; }
     bool ap_active() const { return ap_active_ > 0; }
+
+    void scan_wifi(void *client, WiFiScan_cb callback, void *user_data = nullptr);
 
     void setDebug(int level) { debug_level_ = level; }
 };

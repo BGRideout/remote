@@ -57,6 +57,7 @@
         "ctime": "cpp",
         "bitset": "cpp",
         "regex": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "mdns.h": "c"
     }
 }

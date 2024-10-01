@@ -13,7 +13,7 @@ function ws_state_change(evt)
 {
   if (evt.detail.obj['open'])
   {
-    sendToWS('func=get_wifi');
+    sendToWS('{"func": "get_wifi"}');
   }
 }
 
@@ -43,19 +43,20 @@ function process_ws_message(evt)
 function scan_wifi()
 {
   document.getElementById('ssids').innerHTML = '<option>-- Scanning --</option>';
-  sendToWS('func=scan_wifi')
+  sendToWS('{"func": "scan_wifi"}')
 }
 
 function config_update()
 {
   document.getElementById('ip').innerHTML = '';
-  let cmd = 'func=config_update';
+  let cmd = '{"func": "config_update"';
   let inps = document.querySelectorAll('input');
   for (let inp of inps)
   {
-    cmd += ' ' + inp.name + '=' + encodeURI(inp.value);
+    cmd += ' ,"' + inp.name + ': "' + encodeURI(inp.value) + '"';
     console.log(cmd);
   }
+  cmd += "}";
   sendToWS(cmd);
 }
 
