@@ -9,12 +9,18 @@ document.addEventListener('DOMContentLoaded', function()
 function load_ir(row)
 {
     let ntc = document.getElementById("irget");
-    ntc.innerHTML = "Click button on remote";
-
-    let msg = '{"func": "ir_get", "ir_get": ' + row + ', "path": "' + document.location.pathname + '"}'
-    console.log(msg);
-    sendToWS(msg);
-
+    let lbl = document.getElementById("lbl");
+    if (!lbl || lbl.value != "")
+    {
+        ntc.innerHTML = "Click button on remote";
+        let msg = '{"func": "ir_get", "ir_get": ' + row + ', "path": "' + document.location.pathname + '"}'
+        console.log(msg);
+        sendToWS(msg);
+    }
+    else
+    {
+        ntc.innerHTML = "Button must have a label first";
+    }
 }
 
 function process_ws_message(evt)

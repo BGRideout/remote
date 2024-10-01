@@ -156,6 +156,10 @@ public:
     bool connect_to_wifi(const std::string &hostname, const std::string &ssid, const std::string &password);
     bool update_wifi(const std::string &hostname, const std::string &ssid, const std::string &password);
 
+    const std::string &hostname() const { return hostname_; }
+    const std::string &wifi_ssid() const { return wifi_ssid_; }
+    const std::string ip_addr() const { return ip4addr_ntoa(&wifi_addr_); }
+
     void set_http_callback(bool (*cb)(WEB *web, void *client, const HTTPRequest &rqst, bool &close)) { http_callback_ = cb; }
     void set_message_callback(void(*cb)(WEB *web, void *client, const std::string &msg)) { message_callback_ = cb; }
     void broadcast_websocket(const std::string &txt);

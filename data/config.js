@@ -13,7 +13,9 @@ function ws_state_change(evt)
 {
   if (evt.detail.obj['open'])
   {
-    sendToWS('{"func": "get_wifi"}');
+    let msg = '{"func": "get_wifi", "path": "' + document.location.pathname + '"}';
+    console.log(msg);
+    sendToWS(msg);
   }
 }
 
@@ -22,6 +24,7 @@ function process_ws_message(evt)
   try
   {
     let msg = JSON.parse(evt.detail.message);
+    console.log(msg);
     if (Object.hasOwn(msg, 'host'))
     {
       document.getElementById('hostname').value = msg['host'];
@@ -30,9 +33,14 @@ function process_ws_message(evt)
     }
     if (Object.hasOwn(msg, 'ssids'))
     {
-      document.getElementById('ssids').innerHTML = msg['ssids'];
+      let html = '<option>-- Choose WiFi --</option>';
+      for(let ii = 0; ii < msg.ssids.length; ii++)
+      {
+        html += '<option>' + msg.ssids[ii].name + '</option>';
+      }
+      document.getElementById('ssids').innerHTML = html;
     }
-}
+  }
   catch(e)
   {
     console.log(e);
@@ -43,7 +51,9 @@ function process_ws_message(evt)
 function scan_wifi()
 {
   document.getElementById('ssids').innerHTML = '<option>-- Scanning --</option>';
-  sendToWS('{"func": "scan_wifi"}')
+  let msg = '{"func": "scan_wifi", "path": "' + document.location.pathname + '"}';
+  console.log(msg);
+  sendToWS(msg);
 }
 
 function config_update()
@@ -53,10 +63,10 @@ function config_update()
   let inps = document.querySelectorAll('input');
   for (let inp of inps)
   {
-    cmd += ' ,"' + inp.name + ': "' + encodeURI(inp.value) + '"';
-    console.log(cmd);
+    cmd += ' ,"' + inp.name + '": "' + encodeURI(inp.value) + '"';
   }
-  cmd += "}";
+  cmd += ', "path": "' + document.location.pathname + '"}"';
+  console.log(cmd);
   sendToWS(cmd);
 }
 

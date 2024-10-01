@@ -75,6 +75,11 @@ private:
     bool menu_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool menu_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool menu_ir_get(WEB *web, void *client, const JSONMap &msgmap);
+    bool config_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
+    bool config_update(WEB *web, void *client, const JSONMap &msgmap);
+    bool config_get_wifi(WEB *web, void *client, const JSONMap &msgmap);
+    bool config_scan_wifi(WEB *web, void *client, const JSONMap &msgmap);
+    static bool config_scan_complete(WEB *, void *, const WiFiScanData &, void *);
     bool prompt_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     bool prompt_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
 
@@ -97,7 +102,15 @@ private:
         bool (Remote::* get)(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
         bool (Remote::* post)(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
     };
-    static struct URLPROC funcs[];   
+    static struct URLPROC funcs[];
+
+    struct WSPROC
+    {
+        std::string func;
+        std::regex  path_match;
+        bool (Remote::* cb)(WEB *web, void *client, const JSONMap &msgmap);
+    };
+    static struct WSPROC wsproc[];
 
 public:
     static Remote *get() { if (!singleton_) singleton_ = new Remote(); return singleton_; }

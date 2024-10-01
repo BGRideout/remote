@@ -31,11 +31,22 @@ Remote *Remote::singleton_ = nullptr;
 struct Remote::URLPROC Remote::funcs[] =
     {
         {std::regex("^/index(|\\.html)$", std::regex_constants::extended), &Remote::remote_get, nullptr},
+        {std::regex("^/config(|\\.html)$", std::regex_constants::extended), &Remote::config_get, nullptr},
         {std::regex("^/backup(|\\.html)$", std::regex_constants::extended), &Remote::backup_get, &Remote::backup_post},
         {std::regex("^/menu(|\\.html)$", std::regex_constants::extended), &Remote::menu_get, &Remote::menu_post},
         {std::regex("^(.*)/setup(|\\.html)$", std::regex_constants::extended), &Remote::setup_get, &Remote::setup_post},
         {std::regex("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended), &Remote::setup_btn_get, &Remote::setup_btn_post},
         {std::regex("^/editprompt(|\\.html)$", std::regex_constants::extended), &Remote::prompt_get, &Remote::prompt_post}
+    };
+
+struct Remote::WSPROC Remote::wsproc[] =
+    {
+        {"btnVal", std::regex(".", std::regex_constants::extended), &Remote::remote_button},
+        {"ir_get", std::regex("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended), &Remote::setup_ir_get},
+        {"ir_get", std::regex("^/more", std::regex_constants::extended), &Remote::setup_ir_get},
+        {"config_update", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_update},
+        {"get_wifi", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_get_wifi},
+        {"scan_wifi", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_scan_wifi}
     };
 
 bool Remote::init(int indicator_gpio, int button_gpio)
@@ -161,27 +172,27 @@ void Remote::ws_message(WEB *web, void *client, const std::string &msg)
 {
     JSONMap msgmap(msg.c_str());
     const char *func = msgmap.strValue("func");
-    if (func)
+    const char *path = msgmap.strValue("path");
+    if (func && path)
     {
-        if (strcmp(func, "btnVal") == 0)
+        bool found = false;
+        for (int ii = 0; ii < count_of(wsproc); ii++)
         {
-            remote_button(web, client, msgmap);
-        }
-        else if (strcmp(func, "ir_get") == 0)
-        {
-            if (strncmp(msgmap.strValue("path", ""), "/menu", 5) == 0)
+            if (func == wsproc[ii].func && std::regex_match(path, wsproc[ii].path_match))
             {
-                menu_ir_get(web, client, msgmap);
-            }
-            else
-            {
-                setup_ir_get(web, client, msgmap);
+                (this->*wsproc[ii].cb)(web, client, msgmap);
+                found = true;
+                break;
             }
         }
-        else
+        if (!found)
         {
-            printf("Message processor not found for %s\n", msg.c_str());
+            printf("Message processor not found for func: '%s', path: '%s' <- '%s'\n", func, path, msg.c_str());
         }
+    }
+    else
+    {
+        printf("No function or path defined for %s\n", msg.c_str());
     }
 }
 
@@ -328,6 +339,13 @@ void Remote::ir_busy(bool busy)
 void Remote::web_state(int state)
 {
     get()->indicator_->setWebState(state);
+    if (state == WEB::STA_CONNECTED)
+    {
+        WEB *web = WEB::get();
+        std::string resp = "{\"host\": \"" + web->hostname() + "\", \"ssid\": \"" + web->wifi_ssid() + "\", \"ip\": \"" + web->ip_addr() + "\"}";
+        printf("WiFi connect message: %s\n", resp.c_str());
+        web->broadcast_websocket(resp);
+    }
 }
 
 void Remote::button_event(struct Button::ButtonEvent &ev)
