@@ -8,7 +8,7 @@
 #include "txt.h"
 #include "web_files.h"
 
-bool Remote::backup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::backup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     const char *data;
@@ -50,7 +50,7 @@ bool Remote::backup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
     return ret;
 }
 
-bool Remote::backup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::backup_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     close = false;

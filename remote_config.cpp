@@ -7,7 +7,7 @@
 #include "web_files.h"
 #include <stdio.h>
 
-bool Remote::config_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::config_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     const char *data;
@@ -19,7 +19,7 @@ bool Remote::config_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
     return ret;
 }
 
-bool Remote::config_get_wifi(WEB *web, void *client, const JSONMap &msgmap)
+bool Remote::config_get_wifi(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     std::string resp;
     resp = "{\"host\": \"" + web->hostname() + "\", \"ssid\": \"" + web->wifi_ssid() + "\", \"ip\": \"" + web->ip_addr() + "\"}";
@@ -27,7 +27,7 @@ bool Remote::config_get_wifi(WEB *web, void *client, const JSONMap &msgmap)
     return web->send_message(client, resp.c_str());
 }
 
-bool Remote::config_update(WEB *web, void *client, const JSONMap &msgmap)
+bool Remote::config_update(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     CONFIG *cfg = CONFIG::get();
     const char *hostname = msgmap.strValue("hostname");
@@ -51,13 +51,13 @@ bool Remote::config_update(WEB *web, void *client, const JSONMap &msgmap)
     return true;
 }
 
-bool Remote::config_scan_wifi(WEB *web, void *client, const JSONMap &msgmap)
+bool Remote::config_scan_wifi(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     web->scan_wifi(client, config_scan_complete, this);
     return true;
 }
 
-bool Remote::config_scan_complete(WEB *web, void *client, const WiFiScanData &data, void *user_data)
+bool Remote::config_scan_complete(WEB *web, ClientHandle client, const WiFiScanData &data, void *user_data)
 {
     std::string resp("{\"ssids\": [");
     std::string sep("{\"name\": \"");

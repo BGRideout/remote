@@ -5,7 +5,7 @@
 #include "txt.h"
 #include "web_files.h"
 
-bool Remote::setup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::setup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     std::string url = rqst.root();
@@ -86,7 +86,7 @@ bool Remote::setup_get(WEB *web, void *client, const HTTPRequest &rqst, bool &cl
     return ret;
 }
 
-bool Remote::setup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::setup_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     //rqst.printPostData();
     bool ret = false;
@@ -130,7 +130,7 @@ bool Remote::setup_post(WEB *web, void *client, const HTTPRequest &rqst, bool &c
     return ret;
 }
 
-bool Remote::setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::setup_btn_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     std::string url = rqst.root();
@@ -210,7 +210,7 @@ bool Remote::setup_btn_get(WEB *web, void *client, const HTTPRequest &rqst, bool
     return ret;
 }
 
-bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::setup_btn_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     //rqst.printPostData();
     bool ret = false;
@@ -354,7 +354,7 @@ bool Remote::setup_btn_post(WEB *web, void *client, const HTTPRequest &rqst, boo
     return ret;
 }
 
-bool Remote::setup_ir_get(WEB *web, void *client, const JSONMap &msgmap)
+bool Remote::setup_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     bool ret = false;
     printf("ir_get = %d, path = %s\n",
@@ -381,7 +381,7 @@ bool Remote::setup_ir_get(WEB *web, void *client, const JSONMap &msgmap)
     return ret;
 }
 
-bool Remote::prompt_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::prompt_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     std::string editurl = rqst.query("editurl");
@@ -408,7 +408,7 @@ bool Remote::prompt_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
     return ret;
 }
 
-bool Remote::prompt_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::prompt_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     //rqst.printPostData();
     const char *editurl = rqst.postValue("editurl");

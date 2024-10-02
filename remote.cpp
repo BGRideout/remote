@@ -26,7 +26,7 @@ Remote *Remote::singleton_ = nullptr;
 
 #define ROOT_OFFSET 0x140000
 #define ROOT_SIZE   0x060000
-#define WEB_DEBUG   0
+#define WEB_DEBUG   3
 
 struct Remote::URLPROC Remote::funcs[] =
     {
@@ -126,7 +126,7 @@ bool Remote::get_efile(const std::string &url)
     return efile_.loadForURL(url);
 }
 
-bool Remote::get_efile(const std::string &url, WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::get_efile(const std::string &url, WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     rfile_.clear();
@@ -153,7 +153,7 @@ bool Remote::get_efile(const std::string &url, WEB *web, void *client, const HTT
     return ret;
 }
 
-bool Remote::http_message(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::http_message(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
  
@@ -168,7 +168,7 @@ bool Remote::http_message(WEB *web, void *client, const HTTPRequest &rqst, bool 
     return ret;
 }
 
-void Remote::ws_message(WEB *web, void *client, const std::string &msg)
+void Remote::ws_message(WEB *web, ClientHandle client, const std::string &msg)
 {
     JSONMap msgmap(msg.c_str());
     const char *func = msgmap.strValue("func");
@@ -196,7 +196,7 @@ void Remote::ws_message(WEB *web, void *client, const std::string &msg)
     }
 }
 
-bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::http_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     std::string url = rqst.path();
@@ -234,7 +234,7 @@ bool Remote::http_get(WEB *web, void *client, const HTTPRequest &rqst, bool &clo
     return ret;
 }
 
-bool Remote::http_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::http_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     printf("POST %s\n", rqst.url().c_str());

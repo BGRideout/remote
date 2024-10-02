@@ -5,11 +5,10 @@
 
 #include "remotefile.h"
 #include "jsonmap.h"
+#include "web.h"
 #include <string>
 #include <vector>
 #include <stdint.h>
-
-class WEB;
 
 class Command
 {
@@ -42,7 +41,7 @@ public:
 
 private:
     WEB                 *web_;              // Pointer to web object
-    void                *client_;           // Pointer to web client
+    ClientHandle        client_;            // Handle to web client
 
     int                 button_;            // Button position
     std::string         action_;            // Command action
@@ -62,12 +61,12 @@ private:
     Command();
 
 public:
-    Command(WEB *web, void *client, const JSONMap &msgmap, const RemoteFile::Button *button);
+    Command(WEB *web, ClientHandle client, const JSONMap &msgmap, const RemoteFile::Button *button);
     Command(const Command &other);
     ~Command();
 
     WEB *web() const { return web_; }
-    void *client() const { return client_; }
+    ClientHandle client() const { return client_; }
     int button() const { return button_; }
     const std::string &action() const { return action_; }
     const std::string &url() const { return url_; }

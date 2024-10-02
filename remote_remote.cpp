@@ -5,7 +5,7 @@
 #include "txt.h"
 #include "web_files.h"
 
-bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = get_rfile(rqst.root());
     if (!ret)
@@ -89,7 +89,7 @@ bool Remote::remote_get(WEB *web, void *client, const HTTPRequest &rqst, bool &c
     return ret;
 }
 
-bool Remote::remote_button(WEB *web, void *client, const JSONMap &msgmap)
+bool Remote::remote_button(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     bool ret = false;
     printf("btnVal = %d, action = %s path = %s duration = %f\n",

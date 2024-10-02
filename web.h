@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 #include "lwip/altcp.h"
 #include "lwip/pbuf.h"
@@ -19,8 +20,9 @@ extern "C"
 
 class WEB;
 
+typedef uint32_t   ClientHandle;
 typedef std::map<std::string, int> WiFiScanData;    // SSID -> RSSI
-typedef bool (*WiFiScan_cb)(WEB *, void *, const WiFiScanData &, void *);
+typedef bool (*WiFiScan_cb)(WEB *, ClientHandle, const WiFiScanData &, void *);
 
 class WEB
 {
@@ -59,10 +61,14 @@ private:
         HTTPRequest             http_;              // HTTP request info
         WebsocketPacketHeader_t wshdr_;             // Websocket message header
 
-        CLIENT() : pcb_(nullptr), closed_(true), websocket_(false) {}
+        ClientHandle            handle_;            // Client handle
+        static ClientHandle     next_handle_;       // Next handle
+        static ClientHandle     nextHandle();       // Get next handle
+
+        CLIENT() : pcb_(nullptr), closed_(true), websocket_(false), handle_(0) {}
 
     public:
-        CLIENT(struct altcp_pcb *client_pcb) : pcb_(client_pcb), closed_(false), websocket_(false) {}
+        CLIENT(struct altcp_pcb *client_pcb) : pcb_(client_pcb), closed_(false), websocket_(false) { handle_ = nextHandle(); }
         ~CLIENT();
 
         void addToRqst(const char *str, u16_t ll);
@@ -87,8 +93,15 @@ private:
         bool get_next(u16_t count, void **buffer, u16_t *buflen);
         bool more_to_send() const { return sendbuf_.size() > 0; }
         void requeue(void *buffer, u16_t buflen);
+
+        const ClientHandle &handle() const { return handle_; }
     };
-    std::map<struct altcp_pcb *, CLIENT> clients_;    // Connected clients
+    std::map<ClientHandle, CLIENT *> clientHndl_;           // Connected clients by handle
+    std::map<struct altcp_pcb *, ClientHandle> clientPCB_;  // Connected clienthandles by PCB
+    CLIENT *addClient(struct altcp_pcb *pcb);
+    void    deleteClient(struct altcp_pcb *pcb);
+    CLIENT *findClient(ClientHandle handle);
+    CLIENT *findClient(struct altcp_pcb *pcb);
 
     static err_t tcp_server_accept(void *arg, struct altcp_pcb *client_pcb, err_t err);
     static err_t tcp_server_recv(void *arg, struct altcp_pcb *tpcb, struct pbuf *p, err_t err);
@@ -115,9 +128,9 @@ private:
 
     struct ScanRqst
     {
-        CLIENT      *client;
-        WiFiScan_cb cb;
-        void        *user_data;
+        ClientHandle    client;
+        WiFiScan_cb     cb;
+        void            *user_data;
     };
     std::vector<ScanRqst> scans_;
     WiFiScanData ssids_;
@@ -145,8 +158,8 @@ private:
     err_t send_buffer(struct altcp_pcb *client_pcb, void *buffer, u16_t buflen, bool allocate = true);
     err_t write_next(struct altcp_pcb *client_pcb);
 
-    bool (*http_callback_)(WEB *web, void *client, const HTTPRequest &rqst, bool &close);
-    void (*message_callback_)(WEB *web, void *client, const std::string &msg);
+    bool (*http_callback_)(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+    void (*message_callback_)(WEB *web, ClientHandle client, const std::string &msg);
     void (*notice_callback_)(int state);
     void send_notice(int state) {if (notice_callback_) notice_callback_(state);}
 
@@ -160,8 +173,8 @@ public:
     const std::string &wifi_ssid() const { return wifi_ssid_; }
     const std::string ip_addr() const { return ip4addr_ntoa(&wifi_addr_); }
 
-    void set_http_callback(bool (*cb)(WEB *web, void *client, const HTTPRequest &rqst, bool &close)) { http_callback_ = cb; }
-    void set_message_callback(void(*cb)(WEB *web, void *client, const std::string &msg)) { message_callback_ = cb; }
+    void set_http_callback(bool (*cb)(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)) { http_callback_ = cb; }
+    void set_message_callback(void(*cb)(WEB *web, ClientHandle client, const std::string &msg)) { message_callback_ = cb; }
     void broadcast_websocket(const std::string &txt);
 
     static const int STA_INITIALIZING = 101;
@@ -171,13 +184,13 @@ public:
     static const int AP_INACTIVE = 105;
     void set_notice_callback(void(*cb)(int state)) { notice_callback_ = cb;}
 
-    bool send_data(void *client, const char *data, u16_t datalen, bool allocate=true);
-    bool send_message(void *client, const std::string &message);
+    bool send_data(ClientHandle client, const char *data, u16_t datalen, bool allocate=true);
+    bool send_message(ClientHandle client, const std::string &message);
 
     void enable_ap(int minutes = 30, const std::string &name = "webapp") { ap_requested_ = minutes; ap_name_ = name; }
     bool ap_active() const { return ap_active_ > 0; }
 
-    void scan_wifi(void *client, WiFiScan_cb callback, void *user_data = nullptr);
+    void scan_wifi(ClientHandle client, WiFiScan_cb callback, void *user_data = nullptr);
 
     void setDebug(int level) { debug_level_ = level; }
 };

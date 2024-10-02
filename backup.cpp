@@ -121,7 +121,7 @@ bool Backup::loadBackupFile(const json_t *json, const char *filename)
     return ret;
 }
 
-bool Backup::saveBackup(WEB *web, void *client, const HTTPRequest &rqst)
+bool Backup::saveBackup(WEB *web, ClientHandle client, const HTTPRequest &rqst)
 {
     bool ret = true;
     std::string msg("Success");

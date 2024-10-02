@@ -3,11 +3,10 @@
 #ifndef BACKUP_H
 #define BACKUP_H
 
+#include "web.h"
 #include "httprequest.h"
 #include <stdint.h>
 #include <tiny-json.h>
-
-class WEB;
 
 class Backup
 {
@@ -40,7 +39,7 @@ public:
      * @param   rqst        POST request
      * 
      */
-    static bool saveBackup(WEB *web, void *client, const HTTPRequest &rqst);
+    static bool saveBackup(WEB *web, ClientHandle client, const HTTPRequest &rqst);
 };
 
 #endif

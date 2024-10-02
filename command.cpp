@@ -5,7 +5,7 @@
 
 int Command::count_ = 0;
 
-Command::Command(WEB *web, void *client, const JSONMap &msgmap, const RemoteFile::Button *button)
+Command::Command(WEB *web, ClientHandle client, const JSONMap &msgmap, const RemoteFile::Button *button)
     :web_(web), client_(client), button_(0), duration_(0.0), repeat_(0), row_(0)
 {
     url_ = msgmap.strValue("path", "");

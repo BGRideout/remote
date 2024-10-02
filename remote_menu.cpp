@@ -6,7 +6,7 @@
 #include "txt.h"
 #include "web_files.h"
 
-bool Remote::menu_get(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::menu_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     const char *data;
@@ -68,7 +68,7 @@ bool Remote::menu_get(WEB *web, void *client, const HTTPRequest &rqst, bool &clo
     return ret;
 }
 
-bool Remote::menu_post(WEB *web, void *client, const HTTPRequest &rqst, bool &close)
+bool Remote::menu_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     rqst.printPostData();
@@ -147,7 +147,7 @@ bool Remote::menu_post(WEB *web, void *client, const HTTPRequest &rqst, bool &cl
     return ret;
 }
 
-bool Remote::menu_ir_get(WEB *web, void *client, const JSONMap &msgmap)
+bool Remote::menu_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     bool ret = true;
     printf("ir_get = %d, path = %s\n", msgmap.intValue("ir_get"), msgmap.strValue("path"));

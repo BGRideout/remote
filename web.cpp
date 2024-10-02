@@ -109,6 +109,58 @@ bool WEB::connect_to_wifi(const std::string &hostname, const std::string &ssid, 
     return ret;
 }
 
+WEB::CLIENT *WEB::addClient(struct altcp_pcb *pcb)
+{
+    auto it = clientPCB_.find(pcb);
+    if (it == clientPCB_.end())
+    {
+        CLIENT *client = new CLIENT(pcb);
+        clientPCB_.emplace(pcb, client->handle());
+        clientHndl_.emplace(client->handle(), client);
+        return client;
+    }
+    else
+    {
+        printf("A client entry for pcb %p already eists. Points to handle %d\n", pcb, it->second);
+    }
+    return nullptr;
+}
+
+void WEB::deleteClient(struct altcp_pcb *pcb)
+{
+    auto it1 = clientPCB_.find(pcb);
+    if (it1 != clientPCB_.end())
+    {
+        auto it2 = clientHndl_.find(it1->second);
+        if (it2 != clientHndl_.end())
+        {
+            delete it2->second;
+            clientHndl_.erase(it2);
+        }
+        clientPCB_.erase(it1);
+    }
+}
+
+WEB::CLIENT *WEB::findClient(ClientHandle handle)
+{
+    auto it = clientHndl_.find(handle);
+    if (it != clientHndl_.end())
+    {
+        return it->second;
+    }
+    return nullptr;
+}
+
+WEB::CLIENT *WEB::findClient(struct altcp_pcb *pcb)
+{
+    auto it = clientPCB_.find(pcb);
+    if (it != clientPCB_.end())
+    {
+        return findClient(it->second);
+    }
+    return nullptr;
+}
+
 bool WEB::update_wifi(const std::string &hostname, const std::string &ssid, const std::string &password)
 {
     bool ret = true;
@@ -128,15 +180,15 @@ err_t WEB::tcp_server_accept(void *arg, struct altcp_pcb *client_pcb, err_t err)
         printf("Failure in accept %d\n", err);
         return ERR_VAL;
     }
-    web->clients_.insert(std::pair<struct altcp_pcb *, WEB::CLIENT>(client_pcb, WEB::CLIENT(client_pcb)));
-    if (isDebug(1)) printf("Client connected %p (%d clients)\n", client_pcb, web->clients_.size());
+    CLIENT *client = web->addClient(client_pcb);
+    if (isDebug(1)) printf("Client connected %p (handle %d) (%d clients)\n", client_pcb, client->handle(), web->clientPCB_.size());
     if (isDebug(3))
     {
-        for (auto it = web->clients_.cbegin(); it != web->clients_.cend(); ++it)
+        for (auto it = web->clientHndl_.cbegin(); it != web->clientHndl_.cend(); ++it)
         {
-            printf(" %c-%p", it->second.isWebSocket() ? 'w' : 'h', it->first);
+            printf("  %c-%p (%d)", it->second->isWebSocket() ? 'w' : 'h', it->first, it->second->handle());
         }
-        if (web->clients_.size() > 0) printf("\n");
+        if (web->clientHndl_.size() > 0) printf("\n");
     }
 
     altcp_arg(client_pcb, client_pcb);
@@ -165,8 +217,8 @@ err_t WEB::tcp_server_recv(void *arg, struct altcp_pcb *tpcb, struct pbuf *p, er
     {
         // Receive the buffer
         bool ready = false;
-        auto ci = web->clients_.find(tpcb);
-        if (ci != web->clients_.end())
+        CLIENT *client = web->findClient(tpcb);
+        if (client)
         {
             char buf[64];
             u16_t ll = 0;
@@ -174,30 +226,30 @@ err_t WEB::tcp_server_recv(void *arg, struct altcp_pcb *tpcb, struct pbuf *p, er
             {
                 u16_t l = pbuf_copy_partial(p, buf, sizeof(buf), ll);
                 ll += l;
-                ci->second.addToRqst(buf, l);
+                client->addToRqst(buf, l);
             }
         }
 
         altcp_recved(tpcb, p->tot_len);
 
-        if (ci != web->clients_.end())
+        if (client)
         {
-            while (ci->second.rqstIsReady())
+            while (client->rqstIsReady())
             {
-                if (!ci->second.isWebSocket())
+                if (!client->isWebSocket())
                 {
-                    web->process_rqst(ci->second);
+                    web->process_rqst(*client);
                 }
                 else
                 {
-                    web->process_websocket(ci->second);
+                    web->process_websocket(*client);
                 }
 
                 //  Look up again in case client was closed
-                ci = web->clients_.find(tpcb);
-                if (ci != web->clients_.end())
+                web->findClient(tpcb);
+                if (client)
                 {
-                    ci->second.resetRqst();
+                    client->resetRqst();
                 }
             }
         }
@@ -221,21 +273,21 @@ err_t WEB::tcp_server_sent(void *arg, struct altcp_pcb *tpcb, u16_t len)
 err_t WEB::tcp_server_poll(void *arg, struct altcp_pcb *tpcb)
 {
     WEB *web = get();
-    auto ci = web->clients_.find(tpcb);
-    if (ci != web->clients_.end())
+    CLIENT *client = web->findClient(tpcb);
+    if (client)
     {
         //  Test for match on PCB to avoid race condition on close
-        if (ci->second.pcb() == tpcb)
+        if (client->pcb() == tpcb)
         {
-            if (ci->second.more_to_send())
+            if (client->more_to_send())
             {
-                if (isDebug(1)) printf("Sending to %p on poll (%d clients)\n", ci->first, web->clients_.size());
-                web->write_next(ci->first);
+                if (isDebug(1)) printf("Sending to %d on poll (%d clients)\n", client->handle(), web->clientPCB_.size());
+                web->write_next(client->pcb());
             }
         }
         else
         {
-            printf("Poll on closed pcb %p\n", tpcb);
+            printf("Poll on closed pcb %p (client %d)\n", tpcb, client->handle());
         }
     }
     return ERR_OK;
@@ -246,8 +298,8 @@ void WEB::tcp_server_err(void *arg, err_t err)
     WEB *web = get();
     altcp_pcb *client_pcb = (altcp_pcb *)arg;
     printf("Error %d on client %p\n", err, client_pcb);
-    auto ci = web->clients_.find(client_pcb);
-    if (ci != web->clients_.end())
+    CLIENT *client = web->findClient(client_pcb);
+    if (client)
     {
         web->close_client(client_pcb, true);
     }
@@ -255,10 +307,10 @@ void WEB::tcp_server_err(void *arg, err_t err)
 
 err_t WEB::send_buffer(struct altcp_pcb *client_pcb, void *buffer, u16_t buflen, bool allocate)
 {
-    auto ci = clients_.find(client_pcb);
-    if (ci != clients_.end())
+    CLIENT *client = get()->findClient(client_pcb);
+    if (client)
     {
-        ci->second.queue_send(buffer, buflen, allocate);
+        client->queue_send(buffer, buflen, allocate);
         write_next(client_pcb);
     }
     return ERR_OK;
@@ -267,8 +319,8 @@ err_t WEB::send_buffer(struct altcp_pcb *client_pcb, void *buffer, u16_t buflen,
 err_t WEB::write_next(altcp_pcb *client_pcb)
 {
     err_t err = ERR_OK;
-    auto ci = clients_.find(client_pcb);
-    if (ci != clients_.end())
+    CLIENT *client = get()->findClient(client_pcb);
+    if (client)
     {
         u16_t nn = altcp_sndbuf(client_pcb);
         if (nn > TCP_MSS)
@@ -277,7 +329,7 @@ err_t WEB::write_next(altcp_pcb *client_pcb)
         }
         void *buffer;
         u16_t buflen;
-        if (ci->second.get_next(nn, &buffer, &buflen))
+        if (client->get_next(nn, &buffer, &buflen))
         {
             cyw43_arch_lwip_begin();
             cyw43_arch_lwip_check();
@@ -286,12 +338,12 @@ err_t WEB::write_next(altcp_pcb *client_pcb)
             cyw43_arch_lwip_end();
             if (err != ERR_OK)
             {
-                printf("Failed to write %d bytes of data %d to %p\n", buflen, err, client_pcb);
-                ci->second.requeue(buffer, buflen);
+                printf("Failed to write %d bytes of data %d to %p (%d)\n", buflen, err, client_pcb, client->handle());
+                client->requeue(buffer, buflen);
             }
         }
 
-        if (ci->second.isClosed() && !ci->second.more_to_send())
+        if (client->isClosed() && !client->more_to_send())
         {
             close_client(client_pcb);
         }
@@ -307,7 +359,7 @@ void WEB::process_rqst(CLIENT &client)
 {
     bool ok = false;
     bool close = true;
-    if (isDebug(2)) printf("Request from %p:\n%s\n", client.pcb(), client.rqst().c_str());
+    if (isDebug(2)) printf("Request from %p (%d):\n%s\n", client.pcb(), client.handle(), client.rqst().c_str());
     if (!client.isWebSocket())
     {
         ok = true;
@@ -342,7 +394,7 @@ void WEB::process_http_rqst(CLIENT &client, bool &close)
     const char *data;
     u16_t datalen = 0;
     bool is_static = false;
-    if (http_callback_ && http_callback_(this, &client, client.http(), close))
+    if (http_callback_ && http_callback_(this, client.handle(), client.http(), close))
     {
         ;
     }
@@ -352,16 +404,24 @@ void WEB::process_http_rqst(CLIENT &client, bool &close)
     }
 }
 
-bool WEB::send_data(void *client, const char *data, u16_t datalen, bool allocate)
+bool WEB::send_data(ClientHandle client, const char *data, u16_t datalen, bool allocate)
 {
-    CLIENT *clptr = (CLIENT *)client;
-    send_buffer(clptr->pcb(), (void *)data, datalen, allocate);
-    return true;
+    CLIENT *clptr = findClient(client);
+    CLIENT *clpcb = findClient(clptr->pcb());
+    if (clptr && clpcb == clptr)
+    {
+        send_buffer(clptr->pcb(), (void *)data, datalen, allocate);
+    }
+    else
+    {
+        printf("send_data to non-existent client handle %d (pcb: %p)\n", client, clpcb);
+    }
+    return clptr != nullptr;
 }
 
 void WEB::open_websocket(CLIENT &client)
 {
-    if (isDebug(1)) printf("Accepting websocket connection on %p\n", client.pcb());
+    if (isDebug(1)) printf("Accepting websocket connection on %p (handle %d)\n", client.pcb(), client.handle());
     std::string host = client.http().header("Host");
     std::string key = client.http().header("Sec-WebSocket-Key");
     
@@ -423,7 +483,7 @@ void WEB::process_websocket(CLIENT &client)
 
         if (message_callback_)
         {
-            message_callback_(this, &client, payload);
+            message_callback_(this, client.handle(), payload);
         }
         break;
 
@@ -441,12 +501,20 @@ void WEB::process_websocket(CLIENT &client)
     }
 }
 
-bool WEB::send_message(void *client, const std::string &message)
+bool WEB::send_message(ClientHandle client, const std::string &message)
 {
-    CLIENT *clptr = (CLIENT *)client;
-    if (isDebug(2)) printf("%p message: %s\n", clptr->pcb(), message.c_str());
-    send_websocket(clptr->pcb(), WEBSOCKET_OPCODE_TEXT, message);
-    return true;
+    CLIENT *clptr = findClient(client);
+    CLIENT *clpcb = findClient(clptr->pcb());
+    if (clptr && clpcb == clptr)
+    {
+        if (isDebug(2)) printf("%p (%d) message: %s\n", clptr->pcb(), clptr->handle(), message.c_str());
+        send_websocket(clptr->pcb(), WEBSOCKET_OPCODE_TEXT, message);
+    }
+    else
+    {
+        printf("send_message to non-existent client handle %d (pcb: %p)\n", client, clpcb);
+    }
+    return clptr != nullptr;
 }
 
 void WEB::send_websocket(struct altcp_pcb *client_pcb, enum WebSocketOpCode opc, const std::string &payload, bool mask)
@@ -458,48 +526,48 @@ void WEB::send_websocket(struct altcp_pcb *client_pcb, enum WebSocketOpCode opc,
 
 void WEB::broadcast_websocket(const std::string &txt)
 {
-    for (auto it = clients_.begin(); it != clients_.end(); ++it)
+    for (auto it = clientHndl_.begin(); it != clientHndl_.end(); ++it)
     {
-        if (it->second.isWebSocket())
+        if (it->second->isWebSocket())
         {
-            send_websocket(it->first, WEBSOCKET_OPCODE_TEXT, txt);
+            send_websocket(it->second->pcb(), WEBSOCKET_OPCODE_TEXT, txt);
         }
     }
 }
 
 void WEB::close_client(struct altcp_pcb *client_pcb, bool isClosed)
 {
-    auto ci = clients_.find(client_pcb);
-    if (ci != clients_.end())
+    CLIENT *client = findClient(client_pcb);
+    if (client)
     {
         if (!isClosed)
         {
-            ci->second.setClosed();
-            if (!ci->second.more_to_send())
+            client->setClosed();
+            if (!client->more_to_send())
             {
                 altcp_close(client_pcb);
-                if (isDebug(1)) printf("Closed %s %p. client count = %d\n",
-                                    (ci->second.isWebSocket() ? "ws" : "http"), client_pcb, clients_.size() - 1);
-                clients_.erase(ci);
+                if (isDebug(1)) printf("Closed %s %p (%d). client count = %d\n",
+                                    (client->isWebSocket() ? "ws" : "http"), client_pcb, client->handle(), clientPCB_.size() - 1);
+                deleteClient(client_pcb);
                 if (isDebug(3))
                 {
-                    for (auto it = clients_.cbegin(); it != clients_.cend(); ++it)
+                    for (auto it = clientHndl_.cbegin(); it != clientHndl_.cend(); ++it)
                     {
-                        printf(" %c-%p", it->second.isWebSocket() ? 'w' : 'h', it->first);
+                        printf(" %c-%p (%d)", client->isWebSocket() ? 'w' : 'h', client->pcb(), client->handle());
                     }
-                    if (clients_.size() > 0) printf("\n");
+                    if (clientHndl_.size() > 0) printf("\n");
                 }
             }
             else
             {
-                if (isDebug(1)) printf("Waiting to close %s %p\n", (ci->second.isWebSocket() ? "ws" : "http"), client_pcb);
+                if (isDebug(1)) printf("Waiting to close %s %p (%d)\n", (client->isWebSocket() ? "ws" : "http"), client_pcb, client->handle());
             }
         }
         else
         {
-            printf("Closing %s %p for error\n", (ci->second.isWebSocket() ? "ws" : "http"), client_pcb);
-            ci->second.setClosed();
-            clients_.erase(ci);
+            printf("Closing %s %p (%d)for error\n", (client->isWebSocket() ? "ws" : "http"), client_pcb, client->handle());
+            client->setClosed();
+            deleteClient(client_pcb);
         }
     }
     else
@@ -573,7 +641,7 @@ void WEB::check_wifi()
     }
 }
 
-void WEB::scan_wifi(void *client, WiFiScan_cb callback, void *user_data)
+void WEB::scan_wifi(ClientHandle client, WiFiScan_cb callback, void *user_data)
 {
     if (!cyw43_wifi_scan_active(&cyw43_state))
     {
@@ -581,7 +649,7 @@ void WEB::scan_wifi(void *client, WiFiScan_cb callback, void *user_data)
         int sts = cyw43_wifi_scan(&cyw43_state, &opts, this, scan_cb);
         scans_.clear();
     }
-    ScanRqst rqst = {.client = (CLIENT *)client, .cb = callback, .user_data = user_data };
+    ScanRqst rqst = {.client = client, .cb = callback, .user_data = user_data };
     scans_.push_back(rqst);
 }
 
@@ -748,6 +816,22 @@ void WEB::CLIENT::resetRqst()
             rqst_.clear();
         }
     }
+}
+
+ClientHandle WEB::CLIENT::next_handle_ = 999;
+
+ClientHandle WEB::CLIENT::nextHandle()
+{
+    ClientHandle start = next_handle_;
+    next_handle_ += 1;
+    if (next_handle_ == 0) next_handle_ = 1000;
+    while (WEB::get()->findClient(next_handle_))
+    {
+        next_handle_ += 1;
+        if (next_handle_ == 0) next_handle_ = 1000;
+        if (next_handle_ == start) assert("No client handles");
+    }
+    return next_handle_;
 }
 
 WEB::SENDBUF::SENDBUF(void *buf, uint32_t size, bool alloc) : buffer_((uint8_t *)buf), size_(size), sent_(0), allocated_(alloc)
