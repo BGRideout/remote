@@ -37,31 +37,35 @@ function process_ws_message(evt)
 {
     let obj = JSON.parse(evt.detail.message);
     console.log(obj);
-    if (obj.action !== undefined)
+    let func = obj.func;
+    if (func == "btn_resp")
     {
-        showLED("off");
-        if (obj.action == "press")
+        if (obj.action !== undefined)
         {
-            showLED("on");
+            showLED("off");
+            if (obj.action == "press")
+            {
+                showLED("on");
+            }
+            else if (obj.action == "busy")
+            {
+                showLED("busy");
+            }
+            else if (obj.action == "no-repeat")
+            {
+                event_time = undefined;
+            }
         }
-        else if (obj.action == "busy")
+        else
         {
-            showLED("busy");
+            showLED("off");
         }
-        else if (obj.action == "no-repeat")
+        
+        if (obj.redirect !== undefined && obj.redirect != "" && obj.action != "busy")
         {
-            event_time = undefined;
+            let loc = document.location;
+            document.location = loc.origin + obj.redirect;
         }
-    }
-    else
-    {
-        showLED("off");
-    }
-    
-    if (obj.redirect !== undefined && obj.redirect != "" && obj.action != "busy")
-    {
-        let loc = document.location;
-        document.location = loc.origin + obj.redirect;
     }
 }
 

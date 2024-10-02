@@ -80,6 +80,7 @@ private:
     bool config_get_wifi(WEB *web, ClientHandle client, const JSONMap &msgmap);
     bool config_scan_wifi(WEB *web, ClientHandle client, const JSONMap &msgmap);
     static bool config_scan_complete(WEB *web, ClientHandle client, const WiFiScanData &data, void *user_data);
+    static void config_wifi_message(WEB *web, std::string &message);
     bool prompt_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
     bool prompt_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
 

@@ -70,6 +70,7 @@ void Command::setReply(const std::string &action)
 
     if (action_ != "ir_get")
     {
+        jmap["func"] = "btn_resp";
         std::string red(redirect_);
         if (red.length() > 0 && red.at(0) != '/')
         {
@@ -79,6 +80,7 @@ void Command::setReply(const std::string &action)
     }
     else
     {
+        jmap["func"] = "ir_resp";
         jmap["ir_resp"] = std::to_string(row_);
         if (steps_.size() == 1)
         {

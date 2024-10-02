@@ -41,9 +41,9 @@ struct Remote::URLPROC Remote::funcs[] =
 
 struct Remote::WSPROC Remote::wsproc[] =
     {
-        {"btnVal", std::regex(".", std::regex_constants::extended), &Remote::remote_button},
+        {"btnVal", std::regex(".*", std::regex_constants::extended), &Remote::remote_button},
         {"ir_get", std::regex("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended), &Remote::setup_ir_get},
-        {"ir_get", std::regex("^/more", std::regex_constants::extended), &Remote::setup_ir_get},
+        {"ir_get", std::regex("^/more.*", std::regex_constants::extended), &Remote::setup_ir_get},
         {"config_update", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_update},
         {"get_wifi", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_get_wifi},
         {"scan_wifi", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_scan_wifi}
@@ -342,7 +342,8 @@ void Remote::web_state(int state)
     if (state == WEB::STA_CONNECTED)
     {
         WEB *web = WEB::get();
-        std::string resp = "{\"host\": \"" + web->hostname() + "\", \"ssid\": \"" + web->wifi_ssid() + "\", \"ip\": \"" + web->ip_addr() + "\"}";
+        std::string resp;
+        config_wifi_message(web, resp);
         printf("WiFi connect message: %s\n", resp.c_str());
         web->broadcast_websocket(resp);
     }

@@ -29,7 +29,8 @@ function process_ws_message(evt)
     {
         let msg = JSON.parse(evt.detail.message);
         console.log(msg);
-        if (Object.hasOwn(msg, 'ir_resp') && msg.type != "")
+        let func = msg.func;
+        if (func == 'ir_resp' && msg.type != "")
         {
             let ntc = document.getElementById("irget");
             ntc.innerHTML = "&nbsp;";

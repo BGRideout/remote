@@ -22,9 +22,14 @@ bool Remote::config_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
 bool Remote::config_get_wifi(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     std::string resp;
-    resp = "{\"host\": \"" + web->hostname() + "\", \"ssid\": \"" + web->wifi_ssid() + "\", \"ip\": \"" + web->ip_addr() + "\"}";
-    printf("WiFi get response: %s\n", resp.c_str());
+    config_wifi_message(web, resp);
     return web->send_message(client, resp.c_str());
+}
+
+void Remote::config_wifi_message(WEB *web, std::string &message)
+{
+    message = "{\"func\": \"wifi_resp\", \"host\": \"" + web->hostname() +
+              "\", \"ssid\": \"" + web->wifi_ssid() + "\", \"ip\": \"" + web->ip_addr() + "\"}";
 }
 
 bool Remote::config_update(WEB *web, ClientHandle client, const JSONMap &msgmap)
@@ -43,7 +48,11 @@ bool Remote::config_update(WEB *web, ClientHandle client, const JSONMap &msgmap)
             cfg->set_hostname(hostname);
             cfg->set_wifi_credentials(ssid, pwd);
             web->update_wifi(hostname, ssid, pwd);
-            std::string resp = "{\"host\": \"" + web->hostname() + "\", \"ssid\": \"" + web->wifi_ssid() + "\", \"ip\": \"\"}";
+        }
+        else
+        {
+            std::string resp;
+            config_wifi_message(web, resp);
             printf("WiFi update response: %s\n", resp.c_str());
             web->send_message(client, resp.c_str());
         }
@@ -59,7 +68,7 @@ bool Remote::config_scan_wifi(WEB *web, ClientHandle client, const JSONMap &msgm
 
 bool Remote::config_scan_complete(WEB *web, ClientHandle client, const WiFiScanData &data, void *user_data)
 {
-    std::string resp("{\"ssids\": [");
+    std::string resp("{\"func\": \"wifi-ssids\", \"ssids\": [");
     std::string sep("{\"name\": \"");
     for (auto it = data.cbegin(); it != data.cend(); ++it)
     {
