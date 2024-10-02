@@ -39,10 +39,6 @@ add_executable(${PROJECT_NAME}
 	irprocessor.cpp
 	irdevice.cpp
 	command.cpp
-	jsonstring.cpp
-	jsonmap.cpp
-	web.cpp
-	httprequest.cpp
 	config.cpp
 	backup.cpp
 	${CMAKE_CURRENT_BINARY_DIR}/generated/web_files.cpp
@@ -58,7 +54,7 @@ pico_enable_stdio_usb(${PROJECT_NAME} 1)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC pico_stdlib 
     pico_cyw43_arch_lwip_threadsafe_background pico_lwip_mbedtls pico_mbedtls pico_lwip_mdns
-    flash_filesystem tiny-json bgr_network bgr_ir_protocols bgr_util)
+    flash_filesystem tiny-json bgr_network bgr_ir_protocols bgr_util bgr_json)
 
 pico_add_extra_outputs(${PROJECT_NAME})
 

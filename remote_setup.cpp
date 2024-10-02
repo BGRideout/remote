@@ -372,7 +372,7 @@ bool Remote::setup_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap)
 
         ret = get_efile(base_url);
         RemoteFile::Button *btn = efile_.getButton(pos);
-        if (ret && btn)
+        if (ret)
         {
             Command *cmd = new Command(web, client, msgmap, btn);
             queue_command(cmd);
