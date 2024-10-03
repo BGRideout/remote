@@ -26,13 +26,13 @@ function process_ws_message(evt)
     let msg = JSON.parse(evt.detail.message);
     console.log(msg);
     let func = msg.func;
-    if (func == "wifi_resp"))
+    if (func == "wifi_resp")
     {
       document.getElementById('hostname').value = msg['host'];
       document.getElementById('ssid').value = msg['ssid'];
       document.getElementById('ip').innerHTML = msg['ip'];
     }
-    elseif (func == "wifi-ssids")
+    else if (func == "wifi-ssids")
     {
       let html = '<option>-- Choose WiFi --</option>';
       for(let ii = 0; ii < msg.ssids.length; ii++)

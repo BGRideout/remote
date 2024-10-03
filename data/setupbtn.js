@@ -10,16 +10,21 @@ function load_ir(row)
 {
     let ntc = document.getElementById("irget");
     let lbl = document.getElementById("lbl");
-    if (!lbl || lbl.value != "")
+    let nam = document.getElementById("name");
+    if (lbl && lbl.value == "")
+    {
+        ntc.innerHTML = "Button must have a label first";
+    }
+    else if (nam && nam.value == "")
+    {
+        ntc.innerHTML = "Menu must have a name first";
+    }
+    else if (nam || lbl)
     {
         ntc.innerHTML = "Click button on remote";
         let msg = '{"func": "ir_get", "ir_get": ' + row + ', "path": "' + document.location.pathname + '"}'
         console.log(msg);
         sendToWS(msg);
-    }
-    else
-    {
-        ntc.innerHTML = "Button must have a label first";
     }
 }
 

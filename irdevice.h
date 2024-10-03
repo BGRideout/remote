@@ -7,6 +7,7 @@
 #include "ir_receiver.h"
 #include <map>
 #include <string>
+#include <vector>
 #include <pico/async_context.h>
 
 class RAW_Receiver;
@@ -51,7 +52,8 @@ public:
 
     bool get_transmitter(const std::string &proto, IR_LED * &ir_led);
 
-    bool validProtocol(const std::string &proto) const { return irs_.find(proto) != irs_.cend(); }
+    static bool validProtocol(const std::string &proto) { return irs_.find(proto) != irs_.cend(); }
+    static int protocols(std::vector<std::string> &protolist);
 
     void release_tx() { if (tx_ir_led_) delete tx_ir_led_; tx_ir_led_ = nullptr; }
     void release_rx() { if (rx_ir_led_) delete rx_ir_led_; rx_ir_led_ = nullptr; }

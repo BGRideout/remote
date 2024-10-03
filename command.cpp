@@ -1,6 +1,7 @@
 //                  ***** Command class implementation  *****
 
 #include "command.h"
+#include "irdevice.h"
 #include <stdio.h>
 
 int Command::count_ = 0;
@@ -9,20 +10,33 @@ Command::Command(WEB *web, ClientHandle client, const JSONMap &msgmap, const Rem
     :web_(web), client_(client), button_(0), duration_(0.0), repeat_(0), row_(0)
 {
     url_ = msgmap.strValue("path", "");
-    if (button && msgmap.hasProperty("btnVal"))
+    const char *func = msgmap.strValue("func");
+    if (func && strcmp(func, "btnAction") == 0)
     {
-        button_ = button->position();
         action_ = msgmap.strValue("action", "");
         duration_ = msgmap.realValue("duration");
 
-        redirect_ = button->redirect();
-        repeat_ = button->repeat();
-        for (auto it = button->actions().cbegin(); it != button->actions().cend(); ++it)
+        if (button)
         {
-            steps_.emplace_back(*it);
+            button_ = button->position();
+            redirect_ = button->redirect();
+            repeat_ = button->repeat();
+            for (auto it = button->actions().cbegin(); it != button->actions().cend(); ++it)
+            {
+                steps_.emplace_back(*it);
+            }
         }
     }
-    else if (msgmap.hasProperty("ir_get"))
+    else if (func && strcmp(func, "test_send") == 0)
+    {
+        action_ = "test_send";
+        const char *type = msgmap.strValue("type");
+        if (type && IR_Device::validProtocol(type))
+        {
+            steps_.emplace_back(type, msgmap.intValue("address"), msgmap.intValue("value"), 0);
+        }
+    }
+    else if (func && strcmp(func, "ir_get") == 0)
     {
         action_ = "ir_get";
         row_ = msgmap.intValue("ir_get");
@@ -68,17 +82,7 @@ void Command::setReply(const std::string &action)
     jmap["action"] = action;
     jmap["url"] = url_;
 
-    if (action_ != "ir_get")
-    {
-        jmap["func"] = "btn_resp";
-        std::string red(redirect_);
-        if (red.length() > 0 && red.at(0) != '/')
-        {
-            red.insert(0, "/");
-        }
-        jmap["redirect"] = red;
-    }
-    else
+    if (action_ == "ir_get")
     {
         jmap["func"] = "ir_resp";
         jmap["ir_resp"] = std::to_string(row_);
@@ -89,6 +93,20 @@ void Command::setReply(const std::string &action)
             jmap["value"] = std::to_string(steps_.front().value());
             jmap["delay"] = std::to_string(steps_.front().delay());
         }
+    }
+    else if (action_ == "test_send")
+    {
+        jmap["func"] = "send_resp";
+    }
+    else
+    {
+        jmap["func"] = "btn_resp";
+        std::string red(redirect_);
+        if (red.length() > 0 && red.at(0) != '/')
+        {
+            red.insert(0, "/");
+        }
+        jmap["redirect"] = red;
     }
 
     JSONMap::fromMap(jmap, reply_);

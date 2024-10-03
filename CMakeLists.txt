@@ -33,7 +33,7 @@ add_subdirectory(${PICO_SDK_PATH}/../tiny-json tiny-json)
 add_subdirectory(../picolibs picolibs)
 
 add_executable(${PROJECT_NAME} 
-    remote.cpp remote_remote.cpp remote_backup.cpp remote_setup.cpp remote_menu.cpp remote_cleanup.cpp remote_config.cpp
+    remote.cpp remote_remote.cpp remote_backup.cpp remote_setup.cpp remote_menu.cpp remote_cleanup.cpp remote_config.cpp remote_test.cpp
 	remotefile.cpp
 	menu.cpp
 	irprocessor.cpp
@@ -67,6 +67,7 @@ set(WEB_RESOURCE_FILES
 	data/setup.html data/setup.js
 	data/setupbtn.html data/setupbtn.js
 	data/menuedit.html
+	data/test.html data/test.js
 	data/editprompt.html
 	data/websocket.js
     data/webremote.css data/favicon.ico data/icons.json

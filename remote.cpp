@@ -36,17 +36,20 @@ struct Remote::URLPROC Remote::funcs[] =
         {std::regex("^/menu(|\\.html)$", std::regex_constants::extended), &Remote::menu_get, &Remote::menu_post},
         {std::regex("^(.*)/setup(|\\.html)$", std::regex_constants::extended), &Remote::setup_get, &Remote::setup_post},
         {std::regex("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended), &Remote::setup_btn_get, &Remote::setup_btn_post},
-        {std::regex("^/editprompt(|\\.html)$", std::regex_constants::extended), &Remote::prompt_get, &Remote::prompt_post}
+        {std::regex("^/editprompt(|\\.html)$", std::regex_constants::extended), &Remote::prompt_get, &Remote::prompt_post},
+        {std::regex("^/test(|\\.html)$", std::regex_constants::extended), &Remote::test_get, nullptr},
     };
 
 struct Remote::WSPROC Remote::wsproc[] =
     {
         {"btnVal", std::regex(".*", std::regex_constants::extended), &Remote::remote_button},
         {"ir_get", std::regex("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended), &Remote::setup_ir_get},
-        {"ir_get", std::regex("^/more.*", std::regex_constants::extended), &Remote::setup_ir_get},
+        {"ir_get", std::regex("^/menu.*", std::regex_constants::extended), &Remote::menu_ir_get},
+        {"ir_get", std::regex("^/test.*", std::regex_constants::extended), &Remote::test_ir_get},
         {"config_update", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_update},
         {"get_wifi", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_get_wifi},
-        {"scan_wifi", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_scan_wifi}
+        {"scan_wifi", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_scan_wifi},
+        {"test_send", std::regex("^/test.*", std::regex_constants::extended), &Remote::test_send},
     };
 
 bool Remote::init(int indicator_gpio, int button_gpio)

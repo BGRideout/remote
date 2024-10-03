@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>IR Code Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="/webremote.css" />
+  <script type="text/javascript" src="/test.js"></script>
+  <script type="text/javascript" src="/websocket.js"></script>
+ </head>
+ <body>
+  <h1>IR Code Test</h1>
+  <div>
+   <p>
+   <table>
+    <thead>
+     <tr>
+      <th>Proto</th>
+      <th>Addr</th>
+      <th>Cmd</th>
+     </tr>
+    </thead>
+    <tbody>
+     <tr>
+      <td>
+        <select name="typ" id="typ">
+          <option value="">-- Type --</option>
+          <?ir_types?>
+        </select>
+      </td>
+      <td><input type="text" name="add" id="add" value="0" /></td>
+      <td><input type="text" name="val" id="val" value="0" /></td>
+      <td><button type="button" name="btn" onclick="load_ir();">&lt;-IR</button></td>
+     </tr>
+    </tbody>
+   </table>
+   </p>
+   <p>
+    <button type="button" name="send" onclick="send_ir();">Send</button>
+   </p>
+  </form>
+  <p id = "ntc" class="msg">&nbsp;</p>
+  </div>
+ </body>
+</html>

@@ -76,6 +76,15 @@ bool IR_Processor::do_command(Command *cmd)
         cmd->setReply(cmd->action());
         do_reply(cmd);
     }
+    else if (cmd->action() == "test_send")
+    {
+        cancel_repeat();
+        cmd->setReply(cmd->action());
+        if (!send(cmd))
+        {
+            do_reply(cmd);
+        }
+    }
     else if (cmd->action() == "ir_get")
     {
         ir_device_->identify(identified, new std::pair<IR_Processor *, Command *>(this, cmd));

@@ -60,6 +60,16 @@ bool IR_Device::get_transmitter(const std::string &proto, IR_LED * &ir_led)
     return ret;
 }
 
+int IR_Device::protocols(std::vector<std::string> &protolist)
+{
+    protolist.clear();
+    for (auto it = irs_.cbegin(); it != irs_.cend(); ++it)
+    {
+        protolist.emplace_back(it->first);
+    }
+    return protolist.size();
+}
+
 void IR_Device::identify(void (*cb)(const std::string &type, uint16_t address, uint16_t value, void *data), void *data)
 {
     cb_ = cb;

@@ -75,8 +75,12 @@ bool Remote::menu_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, b
     const char *sel = rqst.postValue("sel");
     if (sel)
     {
-        std::string resp("HTTP/1.1 303 OK\r\nLocation: /menu?menu=");
-        resp += sel;
+        std::string resp("HTTP/1.1 303 OK\r\nLocation: /menu");
+        if (strlen(sel) > 0)
+        {
+            resp += "?menu=";
+            resp += sel;
+        }
         resp += "\r\nConnection: keep-alive\r\n\r\n";
         web->send_data(client, resp.c_str(), resp.length());
         close = false;

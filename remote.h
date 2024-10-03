@@ -81,6 +81,9 @@ private:
     bool config_scan_wifi(WEB *web, ClientHandle client, const JSONMap &msgmap);
     static bool config_scan_complete(WEB *web, ClientHandle client, const WiFiScanData &data, void *user_data);
     static void config_wifi_message(WEB *web, std::string &message);
+    bool test_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+    bool test_send(WEB *web, ClientHandle client, const JSONMap &msgmap);
+    bool test_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap);
     bool prompt_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
     bool prompt_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
 
