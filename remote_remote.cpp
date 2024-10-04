@@ -24,10 +24,11 @@ bool Remote::remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
 
     std::string backurl = rqst.root();
     std::size_t i1 = backurl.rfind('/');
-    if (i1 != std::string::npos && backurl.length() > i1 + 1)
+    if (i1 != std::string::npos)
     {
-        backurl = backurl.erase(i1 + 1);
+        backurl = backurl.erase(i1);
     }
+    if (backurl.empty()) backurl = "/";
     if (strcmp(rfile_.filename(), "actions.json") != 0)
     {
         TXT::substitute(html, "<?backloc?>", backurl);

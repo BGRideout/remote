@@ -500,7 +500,7 @@ void Menu::add_step(const std::string &op, std::deque<Command::Step> &steps)
     }
 }
 
-int Menu::menuFiles(std::vector<std::string> &files)
+int Menu::menuFiles(std::set<std::string> &files)
 {
     int nf = files.size();
     DIR *dir = opendir("/");
@@ -515,7 +515,7 @@ int Menu::menuFiles(std::vector<std::string> &files)
                 (file.substr(0, 5) == "menu_") &&
                 file.substr(file.length() - 5) == ".json")
             {
-                files.push_back(file);
+                files.insert(file);
             }
             ent = readdir(dir);
         }
@@ -523,13 +523,14 @@ int Menu::menuFiles(std::vector<std::string> &files)
     return files.size() - nf;
 }
 
-int Menu::menuNames(std::vector<std::string> &names)
+int Menu::menuNames(std::set<std::string> &names)
 {
-    menuFiles(names);
-    for (auto it = names.begin(); it != names.end(); ++it)
+    names.clear();
+    std::set<std::string> files;
+    menuFiles(files);
+    for (auto it = files.begin(); it != files.end(); ++it)
     {
-        it->erase(it->length() - 5);
-        it->erase(0, 5);
+        names.insert(it->substr(5, it->length() - 10));
     }
     return names.size();
 }

@@ -11,6 +11,8 @@
 #include <pico/util/queue.h>
 #include <pico/async_context.h>
 #include <regex>
+#include <set>
+#include <string>
 
 #define     IR_SEND_GPIO    17
 #define     IR_RCV_GPIO     16
@@ -86,6 +88,11 @@ private:
     bool test_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap);
     bool prompt_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
     bool prompt_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+
+    void list_files();
+    void get_references(std::set<std::string> &files, std::set<std::string> &references);
+    int  add_missing_actions();
+    int  remove_excess_actions();
 
     std::string get_label(const RemoteFile::Button *button) const;
     bool get_label(std::string &label, const std::string &background, const std::string &color, const std::string &fill) const;

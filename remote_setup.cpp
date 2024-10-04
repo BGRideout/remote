@@ -21,6 +21,7 @@ bool Remote::setup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, b
         {
             rfile_.clear();
             efile_.clear();
+            add_missing_actions();
             std::string resp("HTTP/1.1 303 OK\r\nLocation: " + base_url + "\r\n"
                             "Connection: keep-alive\r\n\r\n");
             web->send_data(client, resp.c_str(), resp.length());

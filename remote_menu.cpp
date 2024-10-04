@@ -16,7 +16,7 @@ bool Remote::menu_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
         std::string html(data, datalen);
         std::string menu_name = rqst.query("menu");
         std::string readonly;
-        std::vector<std::string> names;
+        std::set<std::string> names;
         Menu::menuNames(names);
         std::string data;
         for (auto it = names.cbegin(); it != names.cend(); ++it)

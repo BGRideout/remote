@@ -5,6 +5,7 @@
 
 #include "command.h"
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include <deque>
@@ -121,20 +122,20 @@ public:
      * 
      * @details Action files start with "menu_" and end with ".json"
      * 
-     * @param   files       Vector to receive file names (not cleared first)
+     * @param   files       Set to receive file names (not cleared first)
      * 
      * @return  Count of files found
      */
-    static int menuFiles(std::vector<std::string> &files);
+    static int menuFiles(std::set<std::string> &files);
 
     /**
      * @brief   Enumerate the menu names
      * 
-     * @param   names       Vector to receive menu names
+     * @param   names       Set to receive menu names
      * 
      * @return  Count of menus found
      */
-    static int menuNames(std::vector<std::string> &names);
+    static int menuNames(std::set<std::string> &names);
 };
 
 #endif

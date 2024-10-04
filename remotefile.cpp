@@ -530,7 +530,7 @@ void RemoteFile::Button::Action::clear()
 
 //                  ***** RemoteFile Static Members  *****
 
-int RemoteFile::actionFiles(std::vector<std::string> &files)
+int RemoteFile::actionFiles(std::set<std::string> &files)
 {
     int nf = files.size();
     DIR *dir = opendir("/");
@@ -545,7 +545,7 @@ int RemoteFile::actionFiles(std::vector<std::string> &files)
                 (file.substr(0, 7) == "actions") &&
                 file.substr(file.length() - 5) == ".json")
             {
-                files.push_back(file);
+                files.insert(file);
             }
             ent = readdir(dir);
         }

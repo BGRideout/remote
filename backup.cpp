@@ -125,7 +125,7 @@ bool Backup::saveBackup(WEB *web, ClientHandle client, const HTTPRequest &rqst)
 {
     bool ret = true;
     std::string msg("Success");
-    std::vector<std::string> files;
+    std::set<std::string> files;
     const char *savefile = rqst.postValue("savefile");
     if (!savefile) savefile = "";
     std::string downloadFile = savefile;
@@ -142,7 +142,7 @@ bool Backup::saveBackup(WEB *web, ClientHandle client, const HTTPRequest &rqst)
         // Single file backup
         if (!downloadFile.empty())
         {
-            files.push_back(downloadFile);
+            files.insert(downloadFile);
         }
     }
 

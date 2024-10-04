@@ -19,7 +19,7 @@ bool Remote::backup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
         files += CONFIG::get()->hostname();
         files += ".json)</option>\n";
 
-        std::vector<std::string> action_files;
+        std::set<std::string> action_files;
         RemoteFile::actionFiles(action_files);
         Menu::menuFiles(action_files);
         for (auto it = action_files.cbegin(); it != action_files.cend(); ++it)

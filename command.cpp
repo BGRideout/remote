@@ -11,7 +11,7 @@ Command::Command(WEB *web, ClientHandle client, const JSONMap &msgmap, const Rem
 {
     url_ = msgmap.strValue("path", "");
     const char *func = msgmap.strValue("func");
-    if (func && strcmp(func, "btnAction") == 0)
+    if (func && strcmp(func, "btnVal") == 0)
     {
         action_ = msgmap.strValue("action", "");
         duration_ = msgmap.realValue("duration");
@@ -105,6 +105,10 @@ void Command::setReply(const std::string &action)
         if (red.length() > 0 && red.at(0) != '/')
         {
             red.insert(0, "/");
+        }
+        if (!url_.empty() && url_ != "/")
+        {
+            red.insert(0, url_);
         }
         jmap["redirect"] = red;
     }

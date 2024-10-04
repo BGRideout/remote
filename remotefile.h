@@ -6,6 +6,7 @@
 #include "jsonstring.h"
 #include <string>
 #include <string.h>
+#include <set>
 #include <vector>
 #include <tiny-json.h>
 #include <ostream>
@@ -241,11 +242,11 @@ public:
      * 
      * @details Action files start with "action" and end with ".json"
      * 
-     * @param   files       Vector to receive file names (not cleared first)
+     * @param   files       Set to receive file names (not cleared first)
      * 
      * @return  Count of files found
      */
-    static int actionFiles(std::vector<std::string> &files);
+    static int actionFiles(std::set<std::string> &files);
 
     /**
      * @brief   Convert URL path to action file
