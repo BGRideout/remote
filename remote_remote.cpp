@@ -18,7 +18,9 @@ bool Remote::remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
     u16_t datalen;
     WEB_FILES::get()->get_file("index.html", data, datalen);
 
-    std::string html(data, datalen);
+    std::string html;
+    html.reserve(8192);
+    html.assign(data, datalen);
 
     while(TXT::substitute(html, "<?title?>", rfile_.title()));
 

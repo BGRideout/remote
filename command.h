@@ -57,7 +57,7 @@ private:
     std::string         reply_;             // Reply string
 
     static int          count_;             // Instance count
-
+    
     Command();
 
 public:
@@ -79,6 +79,8 @@ public:
 
     void setRepeat(int repeat) { repeat_ = repeat; }
     void setReply(const std::string &action);
+
+    std::string make_redirect(const std::string &base, const std::string &redirect);
 };
 
 #endif

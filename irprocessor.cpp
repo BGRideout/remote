@@ -36,6 +36,7 @@ bool IR_Processor::do_reply(Command *cmd)
 
 bool IR_Processor::do_command(Command *cmd)
 {
+    printf("do_command %s\n", cmd->action().c_str());
     if (cmd->action() == "click")
     {
         cancel_repeat();
@@ -135,7 +136,7 @@ bool IR_Processor::do_repeat(Command *cmd)
     if (rcmd->repeat() > 0)
     {
         int repeat = rcmd->repeat();
-        int delays = sparam->getTime();;
+        int delays = sparam->getTime();
         if (delays > repeat)
         {
             repeat = delays;
@@ -202,8 +203,14 @@ void IR_Processor::SendWorker::time_work()
 
         if (get_transmitter(step.type()))
         {
+            bool repeat = repeated() ||
+                         (last_step_.type() == step.type() &&
+                          last_step_.address() == step.address() &&
+                          last_step_.value() == step.value() &&
+                          last_step_.delay() < ir_led_->repeatInterval() / 2);
+            last_step_ = step;
             ir_led_->setMessageTimes(step.address(), step.value());
-            if (!repeated())
+            if (!repeat)
             {
                 ir_led_->transmit();
             }
@@ -219,6 +226,7 @@ void IR_Processor::SendWorker::time_work()
                    elapsed, ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
             if (get_transmitter(step.type()))
             {
+                last_step_ = step;
                 ir_led_->setMessageTimes(step.address(), step.value());
                 if (!repeated())
                 {
@@ -311,7 +319,7 @@ int IR_Processor::SendWorker::getTime()
         delays += cmd_->steps().at(ii).delay();
         if (get_transmitter(cmd_->steps().at(ii).type()))
         {
-            delays += ir_led_->repeatInterval() * (1 + ir_led_->minimum_repeats());
+            delays += ir_led_->repeatInterval() * (1 /*+ ir_led_->minimum_repeats()*/);
         }
         else if (getMenuSteps(cmd_->steps().at(ii)))
         {

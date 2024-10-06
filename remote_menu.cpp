@@ -13,7 +13,9 @@ bool Remote::menu_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
     u16_t datalen;
     if (WEB_FILES::get()->get_file("menuedit.html", data, datalen))
     {
-        std::string html(data, datalen);
+        std::string html;
+        html.reserve(4096);
+        html.assign(data, datalen);
         std::string menu_name = rqst.query("menu");
         std::string readonly;
         std::set<std::string> names;
@@ -128,7 +130,7 @@ bool Remote::menu_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, b
                 {
                     if (typ[ii] && strlen(typ[ii]) > 0)
                     {
-                        menu->setIRCode(act[ii], typ[ii], to_u16(add[ii]), to_u16(val[ii]), to_u16(val[ii]));
+                        menu->setIRCode(act[ii], typ[ii], to_u16(add[ii]), to_u16(val[ii]), to_u16(dly[ii]));
                     }
                     else
                     {

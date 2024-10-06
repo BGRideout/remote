@@ -31,6 +31,7 @@ private:
         RepeatWorker                *repeat_worker_;    // Repeat worker
         int                         send_step_;         // Step in send operation
         std::deque<Command::Step>   menu_steps_;        // Menu steps
+        Command::Step               last_step_;         // Last command step sent
         bool                        repeated_;          // Repeated operation flag
         bool                        do_reply_;          // Send reply when action complete
 
@@ -74,7 +75,8 @@ private:
 
         int getTime();
 
-        void reset() { cmd_ = nullptr; repeat_worker_ = nullptr; send_step_ = 0; menu_steps_.clear(), repeated_ = false; do_reply_ = false; }
+        void reset() { cmd_ = nullptr; repeat_worker_ = nullptr; send_step_ = 0;
+                       menu_steps_.clear(), last_step_.setType(""), repeated_ = false; do_reply_ = false; }
     };
 
     static SendWorker *sendWorker(async_at_time_worker_t *worker) { return static_cast<SendWorker *>(worker->user_data); }

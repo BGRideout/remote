@@ -290,7 +290,7 @@ bool Menu::getSteps(const Command::Step &step, std::deque<Command::Step> &steps)
 {
     bool ret = false;
     steps.clear();
-    std::size_t i1 = step.type().find('.');
+    std::size_t i1 = step.type().find_first_of(".(");
     std::string name = step.type().substr(0, i1);
     if (name == name_)
     {
@@ -298,15 +298,18 @@ bool Menu::getSteps(const Command::Step &step, std::deque<Command::Step> &steps)
         std::string opt;
         if (i1 != std::string::npos && i1 < step.type().length() - 1)
         {
-            func = step.type().substr(i1 + 1);
-            std::size_t i2 = func.find('(');
+            std::size_t i2 = step.type().find('(');
+            if (i1 < i2)
+            {
+                ++i1;
+                func = step.type().substr(i1, i2 - i1);
+            }
             if (i2 != std::string::npos && i2 < step.type().length() - 2)
             {
-                std::size_t i3 = func.find(')', i2);
+                std::size_t i3 = step.type().find(')', i2);
                 if (i3 != std::string::npos)
                 {
-                    opt = func.substr(i2 + 1, i3 - i2 - 2);
-                    func = func.erase(i1);
+                    opt = step.type().substr(i2 + 1, i3 - i2 - 1);
                 }
             }
         }
@@ -354,7 +357,7 @@ bool Menu::getSteps(const Command::Step &step, std::deque<Command::Step> &steps)
 bool Menu::getMenuSteps(const Command::Step &step, std::deque<Command::Step> &steps)
 {
     bool ret = false;
-    std::size_t i1 = step.type().find('.');
+    std::size_t i1 = step.type().find_first_of(".(");
     std::string name = step.type().substr(0, i1);
 
     Menu *menu = getMenu(name);
@@ -440,7 +443,7 @@ bool Menu::move_pos(int cols, int rows, std::deque<Command::Step> &steps)
         int rowcount = 0;
         if (curcol_ != -1)
         {
-            rowcount = colrow_.at(curcol_);
+            rowcount = rows_.at(curcol_);
         }
         else
         {

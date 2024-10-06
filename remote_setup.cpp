@@ -41,7 +41,9 @@ bool Remote::setup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, b
         u16_t datalen;
         if (WEB_FILES::get()->get_file("setup.html", data, datalen))
         {
-            std::string html(data, datalen);
+            std::string html;
+            html.reserve(8192);
+            html.assign(data, datalen);
 
             while(TXT::substitute(html, "<?title?>", efile_.title()));
 
@@ -173,7 +175,9 @@ bool Remote::setup_btn_get(WEB *web, ClientHandle client, const HTTPRequest &rqs
         u16_t datalen;
         if (WEB_FILES::get()->get_file("setupbtn.html", data, datalen))
         {
-            std::string html(data, datalen);
+            std::string html;
+            html.reserve(4096);
+            html.assign(data, datalen);
             TXT::substitute(html, "<?label?>", button->label());
             TXT::substitute(html, "<?color?>", button->color());
             TXT::substitute(html, "<?redirect?>", button->redirect());

@@ -35,7 +35,9 @@ bool Remote::backup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
             }
         }
 
-        std::string html(data, datalen);
+        std::string html;
+        html.reserve(2048);
+        html.assign(data, datalen);
         HTTPRequest::replaceHeader(html);
         TXT::substitute(html, "<?files?>", files);
         std::string val = rqst.cookie("msg");

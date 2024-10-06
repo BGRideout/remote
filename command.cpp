@@ -101,17 +101,48 @@ void Command::setReply(const std::string &action)
     else
     {
         jmap["func"] = "btn_resp";
-        std::string red(redirect_);
-        if (red.length() > 0 && red.at(0) != '/')
-        {
-            red.insert(0, "/");
-        }
-        if (!url_.empty() && url_ != "/")
-        {
-            red.insert(0, url_);
-        }
-        jmap["redirect"] = red;
+        jmap["redirect"] = make_redirect(url_, redirect_);
     }
 
     JSONMap::fromMap(jmap, reply_);
+}
+
+std::string Command::make_redirect(const std::string &base, const std::string &redirect)
+{
+    std::string ret;
+    if (!redirect.empty())
+    {
+        if (redirect.at(0) != '/')
+        {
+            if (redirect != "..")
+            {
+                if (base == "/")
+                {
+                    ret = base + redirect;
+                }
+                else
+                {
+                    ret = base + "/" + redirect;
+                }
+            }
+            else
+            {
+                ret = base;
+                std::size_t i1 = ret.rfind('/');
+                if (i1 != std::string::npos)
+                {
+                    ret.erase(i1);
+                    if (ret.empty())
+                    {
+                        ret = "/";
+                    }
+                }
+            }
+        }
+        else
+        {
+            ret = redirect;
+        }
+    }
+    return ret;
 }
