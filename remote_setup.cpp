@@ -41,20 +41,19 @@ bool Remote::setup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, b
         u16_t datalen;
         if (WEB_FILES::get()->get_file("setup.html", data, datalen))
         {
-            std::string html;
-            html.reserve(8192);
-            html.assign(data, datalen);
+            TXT html(data, datalen, 16384);
 
-            while(TXT::substitute(html, "<?title?>", efile_.title()));
+            while(html.substitute("<?title?>", efile_.title()));
 
             bool modified = efile_.isModified();
-            TXT::substitute(html, "<?modified?>", modified ? "unsaved" : "saved");
+            html.substitute("<?modified?>", modified ? "unsaved" : "saved");
 
             std::size_t bi = html.find("<?buttons?>");
-            TXT::substitute(html, "<?buttons?>", "");
+            html.substitute("<?buttons?>", "");
             int nb = efile_.maxButtonPosition();
             nb = (nb + 9) / 5 * 5 + 1;
             std::string button;
+            button.reserve(512);
             for (int pos = 1; pos < nb; pos++)
             {
                 RemoteFile::Button *btn = efile_.getButton(pos);
@@ -76,12 +75,13 @@ bool Remote::setup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, b
                     button += label;
                 }
                 button += "</button>";
-                html.insert(bi, button);
+                html.insert(bi, button.c_str());
                 bi += button.length();
             }
 
             HTTPRequest::setHTMLLengthHeader(html);
-            web->send_data(client, html.c_str(), html.length());
+            web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
+            html.release();
             close = false;
             ret = true;
         }
@@ -175,22 +175,21 @@ bool Remote::setup_btn_get(WEB *web, ClientHandle client, const HTTPRequest &rqs
         u16_t datalen;
         if (WEB_FILES::get()->get_file("setupbtn.html", data, datalen))
         {
-            std::string html;
-            html.reserve(4096);
-            html.assign(data, datalen);
-            TXT::substitute(html, "<?label?>", button->label());
-            TXT::substitute(html, "<?color?>", button->color());
-            TXT::substitute(html, "<?redirect?>", button->redirect());
-            TXT::substitute(html, "<?repeat?>", std::to_string(button->repeat()));
-            TXT::substitute(html, "<?swap?>", std::to_string(button->position()));
+            TXT html(data, datalen, 4096);
+            html.substitute("<?label?>", button->label());
+            html.substitute("<?color?>", button->color());
+            html.substitute("<?redirect?>", button->redirect());
+            html.substitute("<?repeat?>", button->repeat());
+            html.substitute("<?swap?>", button->position());
 
-            TXT::substitute(html, "<?btn?>", std::to_string(pos));
-            while(TXT::substitute(html, "<?path?>", base_url));
-            TXT::substitute(html, "<?btncount?>", std::to_string(button->actions().size()));
+            html.substitute("<?btn?>", pos);
+            while(html.substitute("<?path?>", base_url));
+            html.substitute("<?btncount?>", button->actions().size());
 
             std::size_t bi = html.find("<?steps?>");
-            TXT::substitute(html, "<?steps?>", "");
+            html.substitute("<?steps?>", "");
             std::string action;
+            action.reserve(512);
             int row = 0;
             for (auto it = button->actions().cbegin(); it != button->actions().cend(); ++it, ++row)
             {
@@ -202,12 +201,13 @@ bool Remote::setup_btn_get(WEB *web, ClientHandle client, const HTTPRequest &rqs
                 action += "<td><button type=\"submit\" name=\"add_row\" value=\"" + std::to_string(row) + "\">+</button></td>";
                 action += "<td><button type=\"button\" onclick=\"load_ir(" + std::to_string(row) + ");\">&lt;-IR</button></td>";
                 action += "</tr>";
-                html.insert(bi, action);
+                html.insert(bi, action.c_str());
                 bi += action.length();
             }
 
             HTTPRequest::setHTMLLengthHeader(html);
-            web->send_data(client, html.c_str(), html.length());
+            web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
+            html.release();
             close = false;
             ret = true;
         }
@@ -402,11 +402,12 @@ bool Remote::prompt_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
     u16_t datalen;
     if (WEB_FILES::get()->get_file("editprompt.html", data, datalen))
     {
-        std::string html(data, datalen);
-        TXT::substitute(html, "<?editurl?>", editurl);
-        TXT::substitute(html, "<?rqsturl?>", rqsturl);
+        TXT html(data, datalen);
+        html.substitute("<?editurl?>", editurl);
+        html.substitute("<?rqsturl?>", rqsturl);
         HTTPRequest::setHTMLLengthHeader(html);
-        web->send_data(client, html.c_str(), html.length());
+        web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
+        html.release();
         close = false;
         ret = true;
     }

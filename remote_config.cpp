@@ -14,7 +14,7 @@ bool Remote::config_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
     u16_t datalen;
     if (WEB_FILES::get()->get_file("config.html", data, datalen))
     {
-        ret = web->send_data(client, data, datalen, false);
+        ret = web->send_data(client, data, datalen, WEB::STAT);
     }
     return ret;
 }

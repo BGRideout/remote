@@ -13,9 +13,7 @@ bool Remote::menu_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
     u16_t datalen;
     if (WEB_FILES::get()->get_file("menuedit.html", data, datalen))
     {
-        std::string html;
-        html.reserve(4096);
-        html.assign(data, datalen);
+        TXT html(data, datalen, 8192);
         std::string menu_name = rqst.query("menu");
         std::string readonly;
         std::set<std::string> names;
@@ -25,7 +23,7 @@ bool Remote::menu_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
         {
             data += "<option value=\"" + *it + "\"" + (menu_name == *it ? " selected" : "") + ">" + *it + "</option>";
         }
-        while(TXT::substitute(html, "<?menus?>", data));
+        while(html.substitute("<?menus?>", data));
 
         std::map<std::string, Command::Step> emptymap;
         std::map<std::string, Command::Step> &cmdmap = emptymap;
@@ -49,21 +47,22 @@ bool Remote::menu_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
             emptymap["ok"] = Command::Step();
         }
 
-        while(TXT::substitute(html, "<?menuname?>", menu_name));
-        while(TXT::substitute(html, "<?readonly?>", readonly));
+        while(html.substitute("<?menuname?>", menu_name));
+        while(html.substitute("<?readonly?>", readonly));
         for (auto it = cmdmap.cbegin(); it != cmdmap.cend(); ++it)
         {
             std::string key = it->first;
             const Command::Step &step = it->second;
-            TXT::substitute(html, "<?" + key + "typ?>", step.type());
-            TXT::substitute(html, "<?" + key + "add?>", std::to_string(step.address()));
-            TXT::substitute(html, "<?" + key + "val?>", std::to_string(step.value()));
-            TXT::substitute(html, "<?" + key + "dly?>", std::to_string(step.delay()));
+            html.substitute(("<?" + key + "typ?>").c_str(), step.type());
+            html.substitute(("<?" + key + "add?>").c_str(), step.address());
+            html.substitute(("<?" + key + "val?>").c_str(), step.value());
+            html.substitute(("<?" + key + "dly?>").c_str(), step.delay());
         }
-        TXT::substitute(html, "<?rowspercol?>", rowspercol);
+        html.substitute("<?rowspercol?>", rowspercol);
 
         HTTPRequest::setHTMLLengthHeader(html);
-        web->send_data(client, html.c_str(), html.length());
+        web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
+        html.release();
         close = false;
         ret = true;
     }
@@ -73,7 +72,7 @@ bool Remote::menu_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
 bool Remote::menu_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
-    rqst.printPostData();
+    //rqst.printPostData();
     const char *sel = rqst.postValue("sel");
     if (sel)
     {

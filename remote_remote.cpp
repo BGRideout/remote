@@ -18,11 +18,9 @@ bool Remote::remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
     u16_t datalen;
     WEB_FILES::get()->get_file("index.html", data, datalen);
 
-    std::string html;
-    html.reserve(8192);
-    html.assign(data, datalen);
+    TXT html(data, datalen, 16384);
 
-    while(TXT::substitute(html, "<?title?>", rfile_.title()));
+    while(html.substitute("<?title?>", rfile_.title()));
 
     std::string backurl = rqst.root();
     std::size_t i1 = backurl.rfind('/');
@@ -33,18 +31,23 @@ bool Remote::remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
     if (backurl.empty()) backurl = "/";
     if (strcmp(rfile_.filename(), "actions.json") != 0)
     {
-        TXT::substitute(html, "<?backloc?>", backurl);
-        TXT::substitute(html, "<?backvis?>", "visible");
+        html.substitute("<?backloc?>", backurl.c_str());
+        html.substitute("<?backvis?>", "visible");
     }
     else
     {
-        TXT::substitute(html, "<?backloc?>", "/");
-        TXT::substitute(html, "<?backvis?>", "hidden");
+        html.substitute("<?backloc?>", "/");
+        html.substitute("<?backvis?>", "hidden");
     }
 
     std::size_t bi = html.find("<?buttons?>");
-    TXT::substitute(html, "<?buttons?>", "");
-    std::string button;
+    html.substitute("<?buttons?>", "");
+    TXT button(640);
+    std::string background;
+    std::string color;
+    std::string fill;
+    std::string label;
+
     for (auto it = rfile_.buttons().cbegin(); it != rfile_.buttons().cend(); ++it)
     {
         int pos = it->position();
@@ -58,7 +61,7 @@ bool Remote::remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
                 "  !label!\n"
                 "</button>\n";
 
-            TXT::substitute(button, "<?class?>", strlen(it->redirect()) > 0 && it->actions().size() == 0 ? " class=\"redir\"" : "");
+            button.substitute("<?class?>", strlen(it->redirect()) > 0 && it->actions().size() == 0 ? " class=\"redir\"" : "");
         }
         else
         {
@@ -66,27 +69,25 @@ bool Remote::remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
                 "  !label!\n"
                 "</span>\n";
         }
-        TXT::substitute(button, "!row!", std::to_string(row));
-        TXT::substitute(button, "!col!", std::to_string(col));
-        TXT::substitute(button, "!pos!", std::to_string(pos));
+        button.substitute("!row!", row);
+        button.substitute("!col!", col);
+        button.substitute("!pos!", pos);
 
-        std::string background;
-        std::string color;
-        std::string fill;
         it->getColors(background, color, fill);
 
-        std::string label = it->label();
+        label = it->label();
         get_label(label, background, color, fill);
-        TXT::substitute(button, "!label!", label);
-        while (TXT::substitute(button, "{0}", color));
-        while (TXT::substitute(button, "{1}", background));
-        while (TXT::substitute(button, "{2}", fill));
-        html.insert(bi, button);
-        bi += button.length();
+        button.substitute("!label!", label);
+        while (button.substitute("{0}", color));
+        while (button.substitute("{1}", background));
+        while (button.substitute("{2}", fill));
+        html.insert(bi, button.data());
+        bi += button.datasize();
     }
 
     HTTPRequest::setHTMLLengthHeader(html);
-    web->send_data(client, html.c_str(), html.length());
+    web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
+    html.release();
     close = false;
     
     return ret;

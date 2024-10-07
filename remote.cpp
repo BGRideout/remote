@@ -220,7 +220,7 @@ bool Remote::http_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
         u16_t datalen;
         if (url.length() > 0 && WEB_FILES::get()->get_file(url.substr(1), data, datalen))
         {
-            web->send_data(client, data, datalen, false);
+            web->send_data(client, data, datalen, WEB::STAT);
             close = false;
             ret = true;
         }

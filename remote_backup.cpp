@@ -35,17 +35,15 @@ bool Remote::backup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
             }
         }
 
-        std::string html;
-        html.reserve(2048);
-        html.assign(data, datalen);
-        HTTPRequest::replaceHeader(html);
-        TXT::substitute(html, "<?files?>", files);
+        TXT html(data, datalen, 2048);
+        html.substitute("<?files?>", files);
         std::string val = rqst.cookie("msg");
-        TXT::substitute(html, "<?msg?>", val);
+        html.substitute("<?msg?>", val);
         val = rqst.cookie("msgcolor", "transparent");
-        TXT::substitute(html, "<?msgcolor?>", val);
+        html.substitute("<?msgcolor?>", val);
         HTTPRequest::setHTMLLengthHeader(html);
-        web->send_data(client, html.c_str(), html.length());
+        web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
+        html.release();
         close = false;
         ret = true;
     }

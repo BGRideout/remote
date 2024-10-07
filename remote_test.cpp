@@ -14,7 +14,7 @@ bool Remote::test_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
     u16_t datalen;
     if (WEB_FILES::get()->get_file("test.html", data, datalen))
     {
-        std::string html(data, datalen);
+        TXT html(data, datalen, 2048);
 
         std::string type_opts;
         std::vector<std::string> types;
@@ -23,10 +23,11 @@ bool Remote::test_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
         {
             type_opts += "<option value=\"" + *it + "\">" + *it + "</option>";
         }
-        TXT::substitute(html, "<?ir_types?>", type_opts);
+        html.substitute("<?ir_types?>", type_opts);
 
         HTTPRequest::setHTMLLengthHeader(html);
-        web->send_data(client, html.c_str(), html.length());
+        web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
+        html.release();
         close = false;
         ret = true;
     }
