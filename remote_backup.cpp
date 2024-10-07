@@ -41,11 +41,8 @@ bool Remote::backup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
         html.substitute("<?msg?>", val);
         val = rqst.cookie("msgcolor", "transparent");
         html.substitute("<?msgcolor?>", val);
-        HTTPRequest::setHTMLLengthHeader(html);
-        web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
-        html.release();
-        close = false;
-        ret = true;
+        
+        ret = send_http(web, client, html, close);
     }
     return ret;
 }

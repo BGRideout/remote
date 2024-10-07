@@ -25,11 +25,7 @@ bool Remote::test_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
         }
         html.substitute("<?ir_types?>", type_opts);
 
-        HTTPRequest::setHTMLLengthHeader(html);
-        web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
-        html.release();
-        close = false;
-        ret = true;
+        ret = send_http(web, client, html, close);
     }
     return ret;
 }

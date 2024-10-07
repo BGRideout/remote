@@ -85,11 +85,8 @@ bool Remote::remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
         bi += button.datasize();
     }
 
-    HTTPRequest::setHTMLLengthHeader(html);
-    web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
-    html.release();
-    close = false;
-    
+    ret = send_http(web, client, html, close);
+   
     return ret;
 }
 

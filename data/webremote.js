@@ -7,17 +7,9 @@ var ping_ = true;
 document.addEventListener("DOMContentLoaded", function()
 {
     openWS();
-    let frm = document.getElementById("btnForm")
-    frm.addEventListener("submit", function(event)
-    {
-        if (typeof ws == "object")
-        {
-            event.preventDefault();
-        }
-    });
     
     let btns = document.querySelectorAll(".buttons button");
-    for (btn of btns)
+    for (let btn of btns)
     {
         addButtonEvents(btn)
     }
@@ -69,6 +61,7 @@ function process_ws_message(evt)
             }
             else
             {
+                closeWS();
                 let loc = document.location;
                 document.location = loc.origin + obj.redirect;
             }

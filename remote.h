@@ -6,6 +6,7 @@
 #include "remotefile.h"
 #include "jsonmap.h"
 #include "web.h"
+#include "txt.h"
 #include "button.h"
 #include "pico/cyw43_arch.h"
 #include <pico/util/queue.h>
@@ -61,6 +62,8 @@ private:
      { return Remote::get()->http_message(web, client, rqst, close); }
     void ws_message(WEB *web, ClientHandle client, const std::string &msg);
     static void ws_message_(WEB *web, ClientHandle client, const std::string &msg) { Remote::get()->ws_message(web, client, msg); }
+
+    bool send_http(WEB *web, ClientHandle client, TXT &html, bool &close);
 
     bool http_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
     bool http_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);

@@ -79,11 +79,7 @@ bool Remote::setup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, b
                 bi += button.length();
             }
 
-            HTTPRequest::setHTMLLengthHeader(html);
-            web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
-            html.release();
-            close = false;
-            ret = true;
+            ret = send_http(web, client, html, close);
         }
     }
     return ret;
@@ -205,11 +201,7 @@ bool Remote::setup_btn_get(WEB *web, ClientHandle client, const HTTPRequest &rqs
                 bi += action.length();
             }
 
-            HTTPRequest::setHTMLLengthHeader(html);
-            web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
-            html.release();
-            close = false;
-            ret = true;
+            ret = send_http(web, client, html, close);
         }
     }
     return ret;
@@ -405,11 +397,7 @@ bool Remote::prompt_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
         TXT html(data, datalen);
         html.substitute("<?editurl?>", editurl);
         html.substitute("<?rqsturl?>", rqsturl);
-        HTTPRequest::setHTMLLengthHeader(html);
-        web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
-        html.release();
-        close = false;
-        ret = true;
+        ret = send_http(web, client, html, close);
     }
     return ret;
 }

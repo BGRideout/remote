@@ -199,6 +199,15 @@ void Remote::ws_message(WEB *web, ClientHandle client, const std::string &msg)
     }
 }
 
+bool Remote::send_http(WEB *web, ClientHandle client, TXT &html, bool &close)
+{
+    HTTPRequest::setHTMLLengthHeader(html);
+    bool ret = web->send_data(client, html.data(), html.datasize(), WEB::PREALL);
+    html.release();
+    close = !ret;
+    return ret;
+}
+
 bool Remote::http_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
