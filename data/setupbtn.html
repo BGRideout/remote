@@ -11,14 +11,14 @@
   <h1>Actions for Button <?btn?></h1>
   <h2>Page: <?path?></h2>
   <div>
-   <form id="actForm" method="post">
+   <form id="actForm" method="post" autocapitalize="off">
    <p class="setparms">
     <label for="lbl">Label:</label>
     <input type="text" id="lbl" name="lbl" value="<?label?>" />
     <label for="bck">Color:</label>
     <input type="text" id="bck" name="bck" value="<?color?>" />
     <label for="red">Redirect:</label>
-    <input type="text" id="red" name="red" value="<?redirect?>" />
+    <input type="text" id="red" name="red" value="<?redirect?>" pattern="([\/A-Za-z0-9]*|\.\.|https{0,1}:\/\/[A-Za-z0-9_\.\/]+)" />
     <label for="repeat">Repeat (msec):</label>
     <input type="number" id="repeat" name="repeat" min="0" max="1000" value="<?repeat?>" />
     <label for="swap">Swap with</label>

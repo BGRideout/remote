@@ -7,10 +7,11 @@ import mimetypes
 from datetime import datetime, timezone
 
 def escape_bytes(bytes_obj):
-    return ''.join('\\n' if b == 0x0a
-                   else '\\r' if b ==0x0d
-                   else '\\"' if b == 0x22 
-                   else '\\x{:02x}'.format(b) if b < 0x20
+    return ''.join('\\n'                        if b == 0x0a
+                   else '\\r'                   if b ==0x0d
+                   else '\\"'                   if b == 0x22 
+                   else '\\\\'                  if b == 0x5c
+                   else '\\x{:02x}'.format(b)   if b < 0x20
                    else chr(b)
                    for b in bytes_obj)
 

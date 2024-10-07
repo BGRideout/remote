@@ -63,8 +63,15 @@ function process_ws_message(evt)
         
         if (obj.redirect !== undefined && obj.redirect != "" && obj.action != "busy")
         {
-            let loc = document.location;
-            document.location = loc.origin + obj.redirect;
+            if (obj.redirect.startsWith("http://") || obj.redirect.startsWith("https://"))
+            {
+                window.open(obj.redirect, "redirect");
+            }
+            else
+            {
+                let loc = document.location;
+                document.location = loc.origin + obj.redirect;
+            }
         }
     }
 }

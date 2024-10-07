@@ -3,6 +3,7 @@
 #include "remote.h"
 #include "remotefile.h"
 #include "menu.h"
+#include "command.h"
 #include <dirent.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -71,11 +72,11 @@ void Remote::get_references(std::set<std::string> &files, std::set<std::string> 
             {
                 if (strlen(bi->redirect()) > 0)
                 {
-                    if (strcmp(bi->redirect(), "..") != 0)
+                    if (strcmp(bi->redirect(), "..") != 0 &&
+                        strncmp(bi->redirect(), "http://", 7) != 0 &&
+                        strncmp(bi->redirect(), "https://", 8) != 0)
                     {
-                        std::string rurl = url;
-                        if (rurl.empty() || rurl != "/") rurl += "/";
-                        rurl += bi->redirect();
+                        std::string rurl = Command::make_redirect(url, bi->redirect());
                         references.insert(RemoteFile::urlToAction(rurl));
                     }
                 }

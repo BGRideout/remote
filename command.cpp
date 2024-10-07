@@ -112,7 +112,7 @@ std::string Command::make_redirect(const std::string &base, const std::string &r
     std::string ret;
     if (!redirect.empty())
     {
-        if (redirect.at(0) != '/')
+        if (redirect.at(0) != '/' && redirect.substr(0, 7) != "http://" && redirect.substr(0,8) != "https://")
         {
             if (redirect != "..")
             {
