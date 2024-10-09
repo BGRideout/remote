@@ -8,6 +8,7 @@
 #include "web.h"
 #include "txt.h"
 #include "button.h"
+#include "file_logger.h"
 #include "pico/cyw43_arch.h"
 #include <pico/util/queue.h>
 #include <pico/async_context.h>
@@ -19,6 +20,8 @@
 #define     IR_RCV_GPIO     16
 #define     INDICATOR_GPIO  18
 #define     BUTTON_GPIO      3
+
+#define     LOG_FILE        "log_file.txt"
 
 class Command;
 class LED;
@@ -52,6 +55,9 @@ private:
     };
     Indicator                   *indicator_;            // Indicator LED object
     Button                      *button_;               // AP activation button
+    FileLogger                  *log_;                  // Logger
+    static int                  debug_level_;           // Debug level
+    static bool isDebug(int level = 1) { return level <= debug_level_; }
 
     bool get_rfile(const std::string &url);
     bool get_efile(const std::string &url);
@@ -89,6 +95,8 @@ private:
     bool test_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
     bool test_send(WEB *web, ClientHandle client, const JSONMap &msgmap);
     bool test_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap);
+    bool log_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+    bool log_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
     bool prompt_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
     bool prompt_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
 
@@ -108,7 +116,7 @@ private:
     uint16_t to_u16(const std::string &str);
 
     static Remote *singleton_;
-    Remote() : indicator_(nullptr) {}
+    Remote() : indicator_(nullptr), log_(new FileLogger(LOG_FILE)) {}
 
     struct URLPROC
     {

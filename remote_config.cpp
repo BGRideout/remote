@@ -53,7 +53,7 @@ bool Remote::config_update(WEB *web, ClientHandle client, const JSONMap &msgmap)
         {
             std::string resp;
             config_wifi_message(web, resp);
-            printf("WiFi update response: %s\n", resp.c_str());
+            if (isDebug(1)) log_->print("WiFi update response: %s\n", resp.c_str());
             web->send_message(client, resp.c_str());
         }
     }
@@ -79,6 +79,6 @@ bool Remote::config_scan_complete(WEB *web, ClientHandle client, const WiFiScanD
         }
     }
     resp += "\"}]}";
-    printf("WiFi scan response: %s\n", resp.c_str());
+    if (isDebug(1)) get()->log_->print("WiFi scan response: %s\n", resp.c_str());
     return web->send_message(client, resp.c_str());
 }

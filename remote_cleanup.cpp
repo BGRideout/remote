@@ -16,14 +16,15 @@ void Remote::cleanupFiles()
     int nfr = remove_excess_actions();
     if (nfa > 0 || nfr > 0)
     {
-        printf("Added %d files, removed %d files\n\n", nfa, nfr);
+        log_->print("Added %d files, removed %d files\n\n", nfa, nfr);
         list_files();
     }
+    log_->trim_file();
 }
 
 void Remote::list_files()
 {
-    printf("Files on device:\n");
+    log_->print("Files on device:\n");
     DIR *dir = opendir("/");
     if (dir)
     {
@@ -34,7 +35,7 @@ void Remote::list_files()
             {
                 struct stat sb = {0};
                 if (stat(ent->d_name, &sb) == -1) sb.st_size = 0;
-                printf("%-32s %5d", ent->d_name, sb.st_size);
+                log_->print("%-32s %5d", ent->d_name, sb.st_size);
 
                 char buf[41];
                 FILE *f = fopen(ent->d_name, "r");
@@ -47,15 +48,15 @@ void Remote::list_files()
                         {
                             buf[nn--] = '\0';
                         }
-                        printf("    %s", buf);
+                        log_->print("    %s", buf);
                     }
                 }
-                printf("\n");
+                log_->print("\n");
             }
             ent = readdir(dir);
         }
     }
-    printf("\n");
+    log_->print("\n");
 }
 
 void Remote::get_references(std::set<std::string> &files, std::set<std::string> &references)
@@ -84,7 +85,7 @@ void Remote::get_references(std::set<std::string> &files, std::set<std::string> 
         }
         else
         {
-            printf("Failed to load '%s' for url '%s'\n", it->c_str(), url.c_str());
+            log_->print("Failed to load '%s' for url '%s'\n", it->c_str(), url.c_str());
         }
     }
     rfile_.clear();
@@ -103,7 +104,7 @@ int Remote::add_missing_actions()
 
     for (auto it = references.cbegin(); it != references.cend(); ++it)
     {
-        printf("File %s is referenced but does not exist\n", it->c_str());
+        log_->print("File %s is referenced but does not exist\n", it->c_str());
         std::size_t i1 = it->rfind('_');
         if (i1 != std::string::npos)
         {
@@ -136,7 +137,7 @@ int Remote::remove_excess_actions()
 
     for (auto it = files.cbegin(); it != files.cend(); ++it)
     {
-        printf("File %s exists but is not referenced\n", it->c_str());
+        log_->print("File %s exists but is not referenced\n", it->c_str());
         unlink(it->c_str());
     }
 

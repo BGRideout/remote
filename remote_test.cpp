@@ -32,7 +32,6 @@ bool Remote::test_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
 
 bool Remote::test_send(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
-    printf("test_send\n");
     Command *cmd = new Command(web, client, msgmap, nullptr);
     queue_command(cmd);
     return true;
@@ -41,7 +40,7 @@ bool Remote::test_send(WEB *web, ClientHandle client, const JSONMap &msgmap)
 bool Remote::test_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     bool ret = true;
-    printf("test_ir_get, path = %s\n", msgmap.strValue("path"));
+    if (isDebug(1)) log_->print("test_ir_get, path = %s\n", msgmap.strValue("path"));
 
     Command *cmd = new Command(web, client, msgmap, nullptr);
     queue_command(cmd);

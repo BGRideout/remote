@@ -72,6 +72,11 @@ input
   width: 128px;
 }
 
+input.int
+{
+  width: 50px;
+}
+
 div.setup
 {
   display: grid;
@@ -79,6 +84,13 @@ div.setup
   grid-auto-rows: 80px;
   width: 350px;
   margin: auto;
+}
+
+div.scroll
+{
+  overflow-x:     auto;
+  overflow-y:     auto;
+  height:         600px;
 }
 
 .setup button

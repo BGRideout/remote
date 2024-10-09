@@ -151,7 +151,7 @@ bool Remote::menu_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, b
 bool Remote::menu_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     bool ret = true;
-    printf("ir_get = %d, path = %s\n", msgmap.intValue("ir_get"), msgmap.strValue("path"));
+    if (isDebug(1)) log_->print("ir_get = %d, path = %s\n", msgmap.intValue("ir_get"), msgmap.strValue("path"));
 
     int row = msgmap.intValue("ir_get");
     Command *cmd = new Command(web, client, msgmap, nullptr);

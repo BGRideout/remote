@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 Remote *Remote::singleton_ = nullptr;
+int Remote::debug_level_ = 0;
 
 #define ROOT_OFFSET 0x140000
 #define ROOT_SIZE   0x060000
@@ -38,6 +39,7 @@ struct Remote::URLPROC Remote::funcs[] =
         {std::regex("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended), &Remote::setup_btn_get, &Remote::setup_btn_post},
         {std::regex("^/editprompt(|\\.html)$", std::regex_constants::extended), &Remote::prompt_get, &Remote::prompt_post},
         {std::regex("^/test(|\\.html)$", std::regex_constants::extended), &Remote::test_get, nullptr},
+        {std::regex("^/log(|\\.html)$", std::regex_constants::extended), &Remote::log_get, &Remote::log_post},
     };
 
 struct Remote::WSPROC Remote::wsproc[] =
@@ -65,6 +67,7 @@ bool Remote::init(int indicator_gpio, int button_gpio)
     async_context_add_when_pending_worker(cyw43_arch_async_context(), &worker_);
     
     WEB *web = WEB::get();
+    web->setLogger(log_);
     web->setDebug(WEB_DEBUG);
     web->set_http_callback(http_message_);
     web->set_message_callback(ws_message_);
@@ -83,14 +86,14 @@ bool Remote::init(int indicator_gpio, int button_gpio)
         const char *start = strchr(data, '{');
         if (!start || !icons_.loadString(start))
         {
-            printf("Failed to load icons.json\n");
-            printf("ICONS[%d] :\n%s\n--------\n", datalen, data);
+            log_->print("Failed to load icons.json\n");
+            log_->print("ICONS[%d] :\n%s\n--------\n", datalen, data);
             ret = false;
         }
     }
     else
     {
-        printf("Could not find load icons.json\n");
+        log_->print("Could not find load icons.json\n");
         ret = false;
     }
 
@@ -147,7 +150,7 @@ bool Remote::get_efile(const std::string &url, WEB *web, ClientHandle client, co
         if (rurl.empty()) rurl = "/";
         std::string eurl = RemoteFile::actionToURL(efile_.filename());
         if (eurl.empty()) eurl = "/";
-        printf("Requesting edit of '%s' over modified '%s'\n", url.c_str(), efile_.filename());
+        log_->print("Requesting edit of '%s' over modified '%s'\n", url.c_str(), efile_.filename());
         std::string resp("HTTP/1.1 303 OK\r\nLocation: /editprompt?editurl=" + eurl + "&rqsturl=" + rurl + "\r\n"
                          "Connection: keep-alive\r\n\r\n");
         web->send_data(client, resp.c_str(), resp.length());
@@ -190,12 +193,12 @@ void Remote::ws_message(WEB *web, ClientHandle client, const std::string &msg)
         }
         if (!found)
         {
-            printf("Message processor not found for func: '%s', path: '%s' <- '%s'\n", func, path, msg.c_str());
+            log_->print("Message processor not found for func: '%s', path: '%s' <- '%s'\n", func, path, msg.c_str());
         }
     }
     else
     {
-        printf("No function or path defined for %s\n", msg.c_str());
+        log_->print("No function or path defined for %s\n", msg.c_str());
     }
 }
 
@@ -235,13 +238,12 @@ bool Remote::http_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
         }
         else
         {
-            printf("Remote page %s\n", url.c_str());
             ret = remote_get(web, client, rqst, close);
         }
     }
     if (!ret)
     {
-        printf("Returning false for GET of %s\n", url.c_str());
+        log_->print("Returning false for GET of %s\n", url.c_str());
     }
     return ret;
 }
@@ -249,7 +251,6 @@ bool Remote::http_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
 bool Remote::http_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
-    printf("POST %s\n", rqst.url().c_str());
     bool found = false;
     std::string url = rqst.path();
     for (int ii = 0; ii < count_of(funcs); ii++)
@@ -264,7 +265,7 @@ bool Remote::http_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, b
 
     if (!ret)
     {
-        printf("Returning false for POST of %s\n", url.c_str());
+        log_->print("Returning false for POST of %s\n", url.c_str());
     }
     return ret;
 }
@@ -337,7 +338,7 @@ void Remote::get_replies()
     Command *cmd = nullptr;
     while (queue_try_remove(&resp_queue_, &cmd))
     {
-        printf("Reply: %s\n", cmd->reply().c_str());
+        if (isDebug(1)) log_->print("Reply: %s\n", cmd->reply().c_str());
         cmd->web()->send_message(cmd->client(), cmd->reply());
         delete cmd;
     }
@@ -356,7 +357,7 @@ void Remote::web_state(int state)
         WEB *web = WEB::get();
         std::string resp;
         config_wifi_message(web, resp);
-        printf("WiFi connect message: %s\n", resp.c_str());
+        get()->log_->print("WiFi connect message: %s\n", resp.c_str());
         web->broadcast_websocket(resp);
     }
 }
@@ -365,7 +366,7 @@ void Remote::button_event(struct Button::ButtonEvent &ev)
 {
     if (ev.action == Button::Button_Clicked)
     {
-        printf("Start WiFi AP fo 30 minutes\n");
+        get()->log_->print("Start WiFi AP fo 30 minutes\n");
         WEB::get()->enable_ap(30, "webremote");
     }
 }
@@ -389,7 +390,7 @@ uint16_t Remote::to_u16(const std::string &str)
         }
         catch(const std::exception& e)
         {
-            printf("Error %s converting %s to uint16_t\n", e.what(), str.c_str());
+            log_->print("Error %s converting %s to uint16_t\n", e.what(), str.c_str());
         }
     }
     return ret;

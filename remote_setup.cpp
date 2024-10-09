@@ -32,7 +32,7 @@ bool Remote::setup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, b
         ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
         {
-            printf("Error loading action file for GET %s\n", rqst.url().c_str());
+            log_->print("Error loading action file for GET %s\n", rqst.url().c_str());
             //  Return true as get_efile has issued response
             return true;
         }
@@ -98,7 +98,7 @@ bool Remote::setup_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
         ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
         {
-            printf("Error loading action file for POST %s\n", rqst.url().c_str());
+            log_->print("Error loading action file for POST %s\n", rqst.url().c_str());
             //  Return true as get_efile has sent response
             return true;
         }
@@ -140,12 +140,12 @@ bool Remote::setup_btn_get(WEB *web, ClientHandle client, const HTTPRequest &rqs
         std::string base_url = match[1].str();
         if (base_url.empty()) base_url = "/";
         int pos = to_u16(match[3].str());
-        printf("GET '%s' button at %d\n", base_url.c_str(), pos);
+        if (isDebug(1)) log_->print("GET '%s' button at %d\n", base_url.c_str(), pos);
 
         ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
         {
-            printf("Error loading action file for GET %s\n", rqst.url().c_str());
+            log_->print("Error loading action file for GET %s\n", rqst.url().c_str());
             //  Return true as get_efile has sent response
             return true;
         }
@@ -163,7 +163,7 @@ bool Remote::setup_btn_get(WEB *web, ClientHandle client, const HTTPRequest &rqs
         }
         else
         {
-            printf("Invalid button %d for %s\n", pos, rqst.url().c_str());
+            log_->print("Invalid button %d for %s\n", pos, rqst.url().c_str());
             return false;
         }
 
@@ -218,12 +218,12 @@ bool Remote::setup_btn_post(WEB *web, ClientHandle client, const HTTPRequest &rq
     {
         std::string base_url = match[1].str();
         int pos = to_u16(match[3].str());
-        printf("POST '%s' button at %d\n", base_url.c_str(), pos);
+        if (isDebug(1)) log_->print("POST '%s' button at %d\n", base_url.c_str(), pos);
 
         ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
         {
-            printf("Error loading action file for POST %s\n", rqst.url().c_str());
+            log_->print("Error loading action file for POST %s\n", rqst.url().c_str());
             //  Return true as get_efile has sent response
             return true;
         }
@@ -322,7 +322,7 @@ bool Remote::setup_btn_post(WEB *web, ClientHandle client, const HTTPRequest &rq
             }
             else
             {
-                printf("POST array sizes do not match\n");
+                log_->print("POST array sizes do not match\n");
             }
 
             const char *add_row = rqst.postValue("add_row");
@@ -354,7 +354,7 @@ bool Remote::setup_btn_post(WEB *web, ClientHandle client, const HTTPRequest &rq
 bool Remote::setup_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     bool ret = false;
-    printf("ir_get = %d, path = %s\n",
+    if (isDebug(1)) log_->print("ir_get = %d, path = %s\n",
         msgmap.intValue("ir_get"), msgmap.strValue("path"));
 
     int row = msgmap.intValue("ir_get");
@@ -365,7 +365,7 @@ bool Remote::setup_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap)
     {
         std::string base_url = match[1].str();
         int pos = to_u16(match[3].str().c_str());
-        printf("IR_Get '%s' button %d row %d\n", base_url.c_str(), pos, row);
+        if (isDebug(1)) log_->print("IR_Get '%s' button %d row %d\n", base_url.c_str(), pos, row);
 
         ret = get_efile(base_url);
         RemoteFile::Button *btn = efile_.getButton(pos);

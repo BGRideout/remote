@@ -33,7 +33,9 @@ add_subdirectory(${PICO_SDK_PATH}/../tiny-json tiny-json)
 add_subdirectory(../picolibs picolibs)
 
 add_executable(${PROJECT_NAME} 
-    remote.cpp remote_remote.cpp remote_backup.cpp remote_setup.cpp remote_menu.cpp remote_cleanup.cpp remote_config.cpp remote_test.cpp
+    remote.cpp
+	remote_remote.cpp remote_backup.cpp remote_setup.cpp remote_menu.cpp
+	remote_cleanup.cpp remote_config.cpp remote_test.cpp remote_log.cpp
 	remotefile.cpp
 	menu.cpp
 	irprocessor.cpp
@@ -68,9 +70,11 @@ set(WEB_RESOURCE_FILES
 	data/setupbtn.html data/setupbtn.js
 	data/menuedit.html
 	data/test.html data/test.js
+	data/log.html
 	data/editprompt.html
 	data/websocket.js
     data/webremote.css data/favicon.ico data/icons.json
+	data/back.svg data/bottom.svg data/down.svg data/download.svg data/top.svg data/up.svg
     ${CERTS})
 set(WEB_FILES_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(WEB_FILES "${WEB_FILES_DIR}/web_files.cpp")

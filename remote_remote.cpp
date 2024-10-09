@@ -10,7 +10,7 @@ bool Remote::remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
     bool ret = get_rfile(rqst.root());
     if (!ret)
     {
-        printf("Error loading action file for %s\n", rqst.url().c_str());
+        log_->print("Error loading action file for %s\n", rqst.url().c_str());
         return false;
     }
 
@@ -93,7 +93,7 @@ bool Remote::remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
 bool Remote::remote_button(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     bool ret = false;
-    printf("btnVal = %d, action = %s path = %s duration = %f\n",
+    if (isDebug(1)) log_->print("btnVal = %d, action = %s path = %s duration = %f\n",
         msgmap.intValue("btnVal"), msgmap.strValue("action"), msgmap.strValue("path"), msgmap.realValue("duration"));
 
     int button = msgmap.intValue("btnVal");

@@ -61,7 +61,6 @@ function process_ws_message(evt)
             }
             else
             {
-                closeWS();
                 let loc = document.location;
                 document.location = loc.origin + obj.redirect;
             }

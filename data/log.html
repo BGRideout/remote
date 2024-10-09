@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Log File</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="/webremote.css" />
+ </head>
+ <body>
+  <button id = "backbtn" type="button" class="back" onclick="document.location='/'">
+    <img src="back.svg" alt="Home">
+  </button>
+  <span class="led"></span>
+  <h1>Log File</h1>
+  <p>
+    <form id="btnForm" name="btnform" method="post">
+      <p>
+        <label for="from">Lines from</label> <input id="from" name="from" class="int" type="number" readonly value="<?from?>">
+        <label for="to">to</label> <input id="to" name="to" class="int" type="number" readonly value="<?to?>">
+      </p>
+      <p>
+        <button type="submit" name="btn" value="top"><img src="top.svg" alt="Top"></button>
+        <button type="submit" name="btn" value="up"><img src="up.svg" alt="Up 50"></button>
+        <button type="submit" name="btn" value="down"><img src="down.svg" alt="Down 50"></button>
+        <button type="submit" name="btn" value="bottom"><img src="bottom.svg" alt="Bottom"></button>
+        <label for="dbg">Debug</label> <input id="dbg" name="dbg" class="int" type="number" min="0" ma="3" value="<?dbglvl?>"
+                                              onchange="document.getElementById('btnForm').submit();">
+        <button type="submit" name="btn" value="download"><img src="download.svg" alt="Download"></button>
+      </p>
+    </form>
+  </p>
+  <div class="scroll">
+    <pre style="text-align: left">
+      <?lines?>
+    </pre>
+  </div>
+</body>
+</html>

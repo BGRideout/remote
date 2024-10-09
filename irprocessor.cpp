@@ -36,7 +36,6 @@ bool IR_Processor::do_reply(Command *cmd)
 
 bool IR_Processor::do_command(Command *cmd)
 {
-    printf("do_command %s\n", cmd->action().c_str());
     if (cmd->action() == "click")
     {
         cancel_repeat();
@@ -146,7 +145,6 @@ bool IR_Processor::do_repeat(Command *cmd)
             repeat = 20;
         }
         rparam->setInterval(repeat);
-        printf("Repeating at %d msec intervals\n", repeat);
         ret = rparam->start();
     }
     return ret;
@@ -198,8 +196,8 @@ void IR_Processor::SendWorker::time_work()
     {
         uint32_t elapsed = to_ms_since_boot(get_absolute_time()) - start_time_;
         Command::Step step = getStep(ii, true);
-        printf("%5d Step %2d: '%s' %d %d %d repeat=%s\n",
-               elapsed, ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
+        // printf("%5d Step %2d: '%s' %d %d %d repeat=%s\n",
+        //        elapsed, ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
 
         if (get_transmitter(step.type()))
         {
@@ -222,8 +220,8 @@ void IR_Processor::SendWorker::time_work()
         else if (getMenuSteps(step))
         {
             step = getStep(ii, true);
-            printf("%5d Step %2d: '%s' %d %d %d repeat=%s\n",
-                   elapsed, ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
+            // printf("%5d Step %2d: '%s' %d %d %d repeat=%s\n",
+            //        elapsed, ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
             if (get_transmitter(step.type()))
             {
                 last_step_ = step;
