@@ -6,6 +6,7 @@
 #include "config.h"
 #include "web.h"
 #include "web_files.h"
+#include "web_set_time.h"
 #include "jsonmap.h"
 #include "backup.h"
 #include "led.h"
@@ -78,6 +79,8 @@ bool Remote::init(int indicator_gpio, int button_gpio)
         CONFIG *cfg = CONFIG::get();
         ret = web->connect_to_wifi(cfg->hostname(), cfg->ssid(), cfg->password());
     }
+
+    set_time_set_cb(time_callback_s);
 
     const char *data;
     u16_t datalen;
@@ -394,6 +397,15 @@ uint16_t Remote::to_u16(const std::string &str)
         }
     }
     return ret;
+}
+
+void Remote::time_callback()
+{
+    if (!time_initialized_)
+    {
+        time_initialized_ = true;
+        log_->initialize_timestamps();
+    }
 }
 
 //      *****  Indicator  *****

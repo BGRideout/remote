@@ -90,4 +90,9 @@
 #define ALTCP_MBEDTLS_DEBUG         LWIP_DBG_ON
 #define ALTCP_MBEDTLS_LIB_DEBUG     LWIP_DBG_ON
 
+//  For SNTP
+#define SNTP_SET_SYSTEM_TIME(sec)	sntp_set_system_time(sec)
+#define SNTP_SERVER_DNS             1
+#define SNTP_DEBUG                  LWIP_DBG_OFF
+
 #endif /* __LWIPOPTS_H__ */

@@ -115,8 +115,12 @@ private:
 
     uint16_t to_u16(const std::string &str);
 
+    bool time_initialized_;         // Time initilized by NTP
+    void time_callback();
+    static void time_callback_s() { get()->time_callback(); }
+
     static Remote *singleton_;
-    Remote() : indicator_(nullptr), log_(new FileLogger(LOG_FILE)) {}
+    Remote() : indicator_(nullptr), log_(new FileLogger(LOG_FILE)), time_initialized_(false) {}
 
     struct URLPROC
     {

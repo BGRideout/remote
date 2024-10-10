@@ -59,7 +59,7 @@ bool Remote::log_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, boo
 
 bool Remote::log_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
-    rqst.printPostData();
+    //rqst.printPostData();
     const char *dbg = rqst.postValue("dbg");
     if (dbg)
     {
