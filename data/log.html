@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" type="text/css" href="/webremote.css" />
   <script type="text/javascript" src="/log.js"></script>
+  <script type="text/javascript" src="/navigator.js"></script>
  </head>
  <body>
     <button id = "backbtn" type="button" class="back" onclick="document.location='/'">
         <img src="back.svg" alt="Home">
     </button>
-    <span class="led"></span>
     <h1>Log File</h1>
     <form id="btnForm" name="btnform" method="post">
       <p>
@@ -29,7 +29,7 @@
       </p>
     </form>
     <div id="log" class="scroll">
-        <pre style="text-align: left">
+        <pre class="logtext">
             <?lines?>
         </pre>
     </div>

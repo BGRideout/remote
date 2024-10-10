@@ -73,10 +73,11 @@ bool Remote::log_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
         uint32_t fsz = log_->file_size();
         char hdr[] = "HTTP/1.1 200 OK\r\n"
         "Content-Type: application/octet-stream\r\n"
-        "Content-Disposition: attachment; filename=log.txt\r\n"
+        "Content-Disposition: attachment; filename=<?file?>\r\n"
         "Connection: keep-alive\r\n"
         "Content-Length: ";
-        TXT html(hdr, sizeof(hdr) - 1, sizeof(hdr) + fsz + 32);
+        TXT html(hdr, sizeof(hdr) - 1, sizeof(hdr) + 64);
+        html.substitute("<?file?>", WEB::get()->hostname() + ".log");
         html += std::to_string(fsz).c_str();
         html += "\r\n\r\n";
         web->send_data(client, html.data(), html.datasize(), WEB::PREALL);

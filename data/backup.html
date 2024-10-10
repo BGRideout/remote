@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html>
  <head>
-  <title>Data Save and Load</title>
+  <title>Backup and Load</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" type="text/css" href="/webremote.css" />
   <script type="text/javascript" src="/backup.js"></script>
+  <script type="text/javascript" src="/navigator.js"></script>
  </head>
  <body>
-  <h1>Data Save and Load</h1>
+   <button id = "backbtn" type="button" class="back" onclick="document.location='/'">
+    <img src="back.svg" alt="Home">
+  </button>
+  <h1>Backup and Load</h1>
   <div class='backupform'>
    <form id="saveForm" method="post" enctype="multipart/form-data">
     <fieldset>

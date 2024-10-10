@@ -11,7 +11,6 @@
 
 void Remote::cleanupFiles()
 {
-    list_files();
     int nfa = add_missing_actions();
     int nfr = remove_excess_actions();
     if (nfa > 0 || nfr > 0)
@@ -19,7 +18,6 @@ void Remote::cleanupFiles()
         log_->print("Added %d files, removed %d files\n\n", nfa, nfr);
         list_files();
     }
-    log_->trim_file();
 }
 
 void Remote::list_files()

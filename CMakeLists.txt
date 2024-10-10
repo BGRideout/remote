@@ -75,6 +75,7 @@ set(WEB_RESOURCE_FILES
 	data/websocket.js
     data/webremote.css data/favicon.ico data/icons.json
 	data/back.svg data/bottom.svg data/down.svg data/download.svg data/top.svg data/up.svg
+	data/navigator.js
     ${CERTS})
 set(WEB_FILES_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(WEB_FILES "${WEB_FILES_DIR}/web_files.cpp")
