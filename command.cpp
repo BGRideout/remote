@@ -75,7 +75,7 @@ void Command::setStep(const std::string &type, uint16_t address, uint16_t value)
     steps_.emplace_back(type, address, value, 0);
 }
 
-void Command::setReply(const std::string &action)
+void Command::setReply(const std::string &action, bool use_redirect)
 {
     JSONMap::JMAP jmap;
     jmap["button"] = std::to_string(button_);
@@ -101,7 +101,10 @@ void Command::setReply(const std::string &action)
     else
     {
         jmap["func"] = "btn_resp";
-        jmap["redirect"] = make_redirect(url_, redirect_);
+        if (use_redirect)
+        {
+            jmap["redirect"] = make_redirect(url_, redirect_);
+        }
     }
 
     JSONMap::fromMap(jmap, reply_);

@@ -78,7 +78,7 @@ public:
     const std::string &reply() const { return reply_; }
 
     void setRepeat(int repeat) { repeat_ = repeat; }
-    void setReply(const std::string &action);
+    void setReply(const std::string &action, bool use_redirect=true);
 
     static std::string make_redirect(const std::string &base, const std::string &redirect);
 };

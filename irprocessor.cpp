@@ -42,6 +42,7 @@ bool IR_Processor::do_command(Command *cmd)
         cmd->setReply(cmd->action());
         if (!send(cmd))
         {
+            cmd->setReply(cmd->action(), false);
             do_reply(cmd);
         }
     }
@@ -52,7 +53,7 @@ bool IR_Processor::do_command(Command *cmd)
         {
             if (!cancelled && send_worker_->command() == nullptr)
             {
-                cmd->setReply(cmd->action());
+                cmd->setReply(cmd->action(), false);
                 do_repeat(cmd);
             }
             else
@@ -63,7 +64,7 @@ bool IR_Processor::do_command(Command *cmd)
         }
         else
         {
-            cmd->setReply("no-repeat");
+            cmd->setReply("no-repeat", false);
             if (!send(cmd))
             {
                 do_reply(cmd);
@@ -73,7 +74,7 @@ bool IR_Processor::do_command(Command *cmd)
     else if (cmd->action() == "release" || cmd->action()== "cancel")
     {
         cancel_repeat();
-        cmd->setReply(cmd->action());
+        cmd->setReply(cmd->action(), false);
         do_reply(cmd);
     }
     else if (cmd->action() == "test_send")

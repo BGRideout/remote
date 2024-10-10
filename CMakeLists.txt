@@ -70,7 +70,7 @@ set(WEB_RESOURCE_FILES
 	data/setupbtn.html data/setupbtn.js
 	data/menuedit.html
 	data/test.html data/test.js
-	data/log.html
+	data/log.html data/log.js
 	data/editprompt.html
 	data/websocket.js
     data/webremote.css data/favicon.ico data/icons.json
