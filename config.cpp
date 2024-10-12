@@ -14,10 +14,10 @@ bool CONFIG::read_config()
     if (cf)
     {
         strncpy(cfgdata.title, "Web Remote", sizeof(cfgdata.title));
-        nr = fread(&cfgdata, sizeof(cfgdata), 1, cf);
+        nr = fread(&cfgdata, 1, sizeof(cfgdata), cf);
         fclose(cf);
     }
-    return (nr == 1);
+    return (nr > 0);
 }
 
 bool CONFIG::write_config()
@@ -68,4 +68,21 @@ bool CONFIG::set_title(const char *title)
 {
     strncpy(cfgdata.title, title, sizeof(cfgdata.title) - 1);
     return write_config();
+}
+
+bool CONFIG::set_timezone(const char *timezone)
+{
+    strncpy(cfgdata.timezone, timezone, sizeof(cfgdata.timezone) - 1);
+    return write_config();
+}
+
+bool CONFIG::set_debug(int debug)
+{
+    bool ret = cfgdata.debug == debug;
+    if (!ret)
+    {
+        cfgdata.debug = debug;
+        ret = write_config();
+    }
+    return ret;
 }

@@ -28,7 +28,6 @@ int Remote::debug_level_ = 0;
 
 #define ROOT_OFFSET 0x140000
 #define ROOT_SIZE   0x060000
-#define WEB_DEBUG   0
 
 struct Remote::URLPROC Remote::funcs[] =
     {
@@ -69,7 +68,6 @@ bool Remote::init(int indicator_gpio, int button_gpio)
     
     WEB *web = WEB::get();
     web->setLogger(log_);
-    web->setDebug(WEB_DEBUG);
     web->set_http_callback(http_message_);
     web->set_message_callback(ws_message_);
     web->set_notice_callback(web_state);
@@ -165,7 +163,8 @@ bool Remote::get_efile(const std::string &url, WEB *web, ClientHandle client, co
 bool Remote::http_message(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
- 
+
+    if (isDebug(1)) log_->print("%d HTTP %s %s\n", client, rqst.type().c_str(), rqst.url().c_str());
     if (rqst.type() == "GET")
     {
         ret = http_get(web, client, rqst, close);
@@ -184,6 +183,7 @@ void Remote::ws_message(WEB *web, ClientHandle client, const std::string &msg)
     const char *path = msgmap.strValue("path");
     if (func && path)
     {
+        if (isDebug(1)) log_->print("%d WS func=%s, path=%s\n", client, func, path);
         bool found = false;
         for (int ii = 0; ii < count_of(wsproc); ii++)
         {
@@ -408,6 +408,13 @@ void Remote::time_callback()
     }
 }
 
+void Remote::setDebug(int level)
+{
+    debug_level_ = level;
+    WEB::get()->setDebug(debug_level_);
+    CONFIG::get()->set_debug(debug_level_);
+}
+
 //      *****  Indicator  *****
 
 Remote::Indicator::Indicator(int led_gpio) : ir_busy_(false), web_state_(0), ap_state_(false)
@@ -485,12 +492,14 @@ int main ()
     printf("Filesystem mounted\n");
 
     CONFIG::get()->init();
+    setenv("TZ", CONFIG::get()->timezone(), 1);
 
     if (cyw43_arch_init()) {
         printf("failed to initialise cyw43_arch\n");
         return -1;
     }
 
+    Remote::get()->setDebug(CONFIG::get()->debug());
     Remote::get()->cleanupFiles();
     Remote::get()->init(INDICATOR_GPIO, BUTTON_GPIO);
 

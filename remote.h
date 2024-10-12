@@ -160,6 +160,8 @@ public:
      *          Remove unknown files
      */
     void cleanupFiles();
+
+    void setDebug(int level);
 };
 
 #endif

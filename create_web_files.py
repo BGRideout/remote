@@ -41,7 +41,7 @@ for file in p.files:
     ms = mime.split('/')
     hdr = b"HTTP/1.1 200 OK\r\nContent-Type: " + mime.encode() + \
           b"\r\nContent-Length: " + str(os.path.getsize(file.name)).encode() + b"\r\nConnection: keep-alive\r\n" + \
-          b"Cache-Control: max-age=3600\r\nLast-Modified: " + timestamp + b"\r\n\r\n"
+          b"Cache-Control: max-age=86400\r\nLast-Modified: " + timestamp + b"\r\n\r\n"
     if ms[0] == 'text' or 'xml' in ms[1] or ms[1] == 'pem-certificate-chain':
         p.o.writelines("        \"" + escape_bytes(hdr) + "\"\n")
         while True:

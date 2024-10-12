@@ -31,6 +31,7 @@ function process_ws_message(evt)
       document.getElementById('hostname').value = msg['host'];
       document.getElementById('ssid').value = msg['ssid'];
       document.getElementById('ip').innerHTML = msg['ip'];
+      document.getElementById('timezone').value = msg['timezone'];
     }
     else if (func == "wifi-ssids")
     {

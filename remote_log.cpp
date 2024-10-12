@@ -63,8 +63,8 @@ bool Remote::log_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
     const char *dbg = rqst.postValue("dbg");
     if (dbg)
     {
-        debug_level_ = atoi(dbg);
-        WEB::get()->setDebug(debug_level_);
+        int level = atoi(dbg);
+        setDebug(level);
     }
 
     const char *btn = rqst.postValue("btn");

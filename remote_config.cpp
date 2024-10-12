@@ -29,7 +29,8 @@ bool Remote::config_get_wifi(WEB *web, ClientHandle client, const JSONMap &msgma
 void Remote::config_wifi_message(WEB *web, std::string &message)
 {
     message = "{\"func\": \"wifi_resp\", \"host\": \"" + web->hostname() +
-              "\", \"ssid\": \"" + web->wifi_ssid() + "\", \"ip\": \"" + web->ip_addr() + "\"}";
+              "\", \"ssid\": \"" + web->wifi_ssid() + "\", \"ip\": \"" + web->ip_addr() +
+              "\", \"timezone\": \"" + CONFIG::get()->timezone() + "\"}";
 }
 
 bool Remote::config_update(WEB *web, ClientHandle client, const JSONMap &msgmap)
@@ -38,15 +39,33 @@ bool Remote::config_update(WEB *web, ClientHandle client, const JSONMap &msgmap)
     const char *hostname = msgmap.strValue("hostname");
     const char *ssid = msgmap.strValue("ssid");
     const char *pwd = msgmap.strValue("pwd");
-    if (hostname && ssid && pwd)
+    const char *timezone = msgmap.strValue("timezone");
+    if (hostname && ssid && pwd && timezone)
     {
         if (strlen(pwd) == 0) pwd = cfg->password();
-        if (strcmp(hostname, cfg->hostname()) != 0 ||
-            strcmp(ssid, cfg->ssid()) != 0 ||
-            strcmp(pwd, cfg->password()) != 0)
+        bool wifichange = false;
+        if (strcmp(hostname, cfg->hostname()) != 0)
         {
             cfg->set_hostname(hostname);
+            wifichange = true;
+        }
+
+        if (strcmp(ssid, cfg->ssid()) != 0 ||
+            strcmp(pwd, cfg->password()) != 0)
+        {
             cfg->set_wifi_credentials(ssid, pwd);
+            wifichange = true;
+        }
+
+        if (strcmp(timezone, cfg->timezone()) != 0)
+        {
+            cfg->set_timezone(timezone);
+            setenv("TZ", timezone, 1);
+            tzset();
+        }
+
+        if (wifichange)
+        {
             web->update_wifi(hostname, ssid, pwd);
         }
         else
