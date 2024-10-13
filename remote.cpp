@@ -26,8 +26,8 @@
 Remote *Remote::singleton_ = nullptr;
 int Remote::debug_level_ = 0;
 
-#define ROOT_OFFSET 0x140000
-#define ROOT_SIZE   0x060000
+#define ROOT_OFFSET 0x110000
+#define ROOT_SIZE   0x0EF000
 
 struct Remote::URLPROC Remote::funcs[] =
     {

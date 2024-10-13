@@ -95,6 +95,7 @@ int Remote::add_missing_actions()
     std::set<std::string> references;
     get_references(files, references);
 
+    references.insert("actions.json");
     for (auto it = files.cbegin(); it != files.cend(); ++it)
     {
         references.erase(*it);
@@ -103,18 +104,19 @@ int Remote::add_missing_actions()
     for (auto it = references.cbegin(); it != references.cend(); ++it)
     {
         log_->print("File %s is referenced but does not exist\n", it->c_str());
+        std::string title("New Remote");
         std::size_t i1 = it->rfind('_');
         if (i1 != std::string::npos)
         {
-            std::string title = it->substr(i1 + 1, it->length() - i1 - 1 - 5);
+            title = it->substr(i1 + 1, it->length() - i1 - 1 - 5);
             title[0] = std::toupper(title.at(0));
-            std::string json("{\"title\": \"");
-            json += title + "\", \"buttons\": []}";
-            if (rfile_.loadString(json, it->c_str()))
-            {
-                rfile_.saveFile();
-                rfile_.clear();
-            }
+        }
+        std::string json("{\"title\": \"");
+        json += title + "\", \"buttons\": []}";
+        if (rfile_.loadString(json, it->c_str()))
+        {
+            rfile_.saveFile();
+            rfile_.clear();
         }
     }
 
