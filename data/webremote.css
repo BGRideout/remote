@@ -121,7 +121,8 @@ pre.logtext
   display: grid;
   grid-template-columns: 1fr 2fr;
   row-gap: 8px;
-  margin-left: 20px;
+  width: 350px;
+  margin: auto;
 }
 
 .setparms label

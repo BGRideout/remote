@@ -57,7 +57,6 @@ private:
     Button                      *button_;               // AP activation button
     FileLogger                  *log_;                  // Logger
     static int                  debug_level_;           // Debug level
-    static bool isDebug(int level = 1) { return level <= debug_level_; }
 
     bool get_rfile(const std::string &url);
     bool get_efile(const std::string &url);
@@ -162,6 +161,8 @@ public:
     void cleanupFiles();
 
     void setDebug(int level);
+    static bool isDebug(int level = 1) { return level <= debug_level_; }
+    static FileLogger *logger() { return get()->log_; }
 };
 
 #endif

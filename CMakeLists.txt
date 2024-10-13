@@ -72,22 +72,9 @@ set(WEB_RESOURCE_FILES
 	data/test.html data/test.js
 	data/log.html data/log.js
 	data/editprompt.html
-	data/websocket.js
     data/webremote.css data/favicon.ico data/icons.json
 	data/back.svg data/bottom.svg data/down.svg data/download.svg data/top.svg data/up.svg
 	data/navigator.js
     ${CERTS})
-set(WEB_FILES_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-set(WEB_FILES "${WEB_FILES_DIR}/web_files.cpp")
-set(WEB_FILES_TARGET "${PROJECT_NAME}_web_files")
-add_custom_target(${WEB_FILES_TARGET} DEPENDS ${WEB_RESOURCE_FILES})
-add_custom_command(
-	OUTPUT ${WEB_FILES}
-	DEPENDS ${WEB_RESOURCE_FILES} ${CMAKE_SOURCE_DIR}/create_web_files.py
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	COMMAND ${CMAKE_COMMAND} -E make_directory ${WEB_FILES_DIR} &&
-			${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/create_web_files.py -o ${WEB_FILES} ${WEB_RESOURCE_FILES}
-	VERBATIM)
-add_dependencies(${PROJECT_NAME}
-	${WEB_FILES_TARGET}
-	)
+
+web_files(DIR ${WEB_FILES_DIR} OUTPUT ${WEB_FILES} FILES ${WEB_RESOURCE_FILES} WEBSOCKET)

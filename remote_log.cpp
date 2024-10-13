@@ -104,7 +104,7 @@ bool Remote::log_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
         return true;
     }
 
-    std::string resp("HTTP/1.1 303 OK\r\nLocation: /log");
+    std::string newurl("/log");
     const char *to = rqst.postValue("to");
     if (to)
     {
@@ -132,9 +132,10 @@ bool Remote::log_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
                 endl = log_->max_line_count() + 50;
             }
         }
-        resp += "?endl=" + std::to_string(endl);
+
+        newurl += "?endl=" + std::to_string(endl);
     }
-    resp += "\r\nConnection: keep-alive\r\n\r\n";
-    close = false;
-    return web->send_data(client, resp.c_str(), resp.length());
+
+    web->modifyURL(client, newurl);
+    return log_get(web, client, rqst, close);
 }
