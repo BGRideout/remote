@@ -6,7 +6,7 @@
 #include "web_files.h"
 #include <stdio.h>
 
-bool Remote::log_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::log_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     const char *data;
@@ -57,7 +57,7 @@ bool Remote::log_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, boo
 }
 
 
-bool Remote::log_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::log_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     //rqst.printPostData();
     const char *dbg = rqst.postValue("dbg");
@@ -136,6 +136,6 @@ bool Remote::log_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
         newurl += "?endl=" + std::to_string(endl);
     }
 
-    web->modifyURL(client, newurl);
+    rqst.setURL(newurl);
     return log_get(web, client, rqst, close);
 }

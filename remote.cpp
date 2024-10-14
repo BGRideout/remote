@@ -133,7 +133,7 @@ bool Remote::get_efile(const std::string &url)
     return efile_.loadForURL(url);
 }
 
-bool Remote::get_efile(const std::string &url, WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::get_efile(const std::string &url, WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     rfile_.clear();
@@ -160,7 +160,7 @@ bool Remote::get_efile(const std::string &url, WEB *web, ClientHandle client, co
     return ret;
 }
 
-bool Remote::http_message(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::http_message(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
 
@@ -214,7 +214,7 @@ bool Remote::send_http(WEB *web, ClientHandle client, TXT &html, bool &close)
     return ret;
 }
 
-bool Remote::http_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::http_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     std::string url = rqst.path();
@@ -251,7 +251,7 @@ bool Remote::http_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
     return ret;
 }
 
-bool Remote::http_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::http_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     bool found = false;

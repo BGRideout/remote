@@ -7,7 +7,7 @@
 #include "web_files.h"
 #include <stdio.h>
 
-bool Remote::test_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::test_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     const char *data;

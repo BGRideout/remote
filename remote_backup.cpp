@@ -8,7 +8,7 @@
 #include "txt.h"
 #include "web_files.h"
 
-bool Remote::backup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::backup_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     const char *data;
@@ -47,7 +47,7 @@ bool Remote::backup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, 
     return ret;
 }
 
-bool Remote::backup_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::backup_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     close = false;
@@ -57,6 +57,10 @@ bool Remote::backup_post(WEB *web, ClientHandle client, const HTTPRequest &rqst,
     if (button == "upload")
     {
         ret = Backup::loadBackup(rqst, msg);
+        if (!ret)
+        {
+            msg = "Load failed";
+        }
     }
     else if (button == "download")
     {

@@ -5,7 +5,7 @@
 #include "txt.h"
 #include "web_files.h"
 
-bool Remote::remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::remote_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     bool ret = get_rfile(rqst.root());
     if (!ret)

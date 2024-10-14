@@ -60,44 +60,44 @@ private:
 
     bool get_rfile(const std::string &url);
     bool get_efile(const std::string &url);
-    bool get_efile(const std::string &url, WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+    bool get_efile(const std::string &url, WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
 
-    bool http_message(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-    static bool http_message_(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+    bool http_message(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    static bool http_message_(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
      { return Remote::get()->http_message(web, client, rqst, close); }
     void ws_message(WEB *web, ClientHandle client, const std::string &msg);
     static void ws_message_(WEB *web, ClientHandle client, const std::string &msg) { Remote::get()->ws_message(web, client, msg); }
 
     bool send_http(WEB *web, ClientHandle client, TXT &html, bool &close);
 
-    bool http_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-    bool http_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+    bool http_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    bool http_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
 
-    bool remote_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+    bool remote_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
     bool remote_button(WEB *web, ClientHandle client, const JSONMap &msgmap);
-    bool backup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-    bool backup_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-    bool setup_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-    bool setup_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-    bool setup_btn_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-    bool setup_btn_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+    bool backup_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    bool backup_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    bool setup_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    bool setup_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    bool setup_btn_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    bool setup_btn_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
     bool setup_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap);
-    bool menu_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-    bool menu_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+    bool menu_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    bool menu_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
     bool menu_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap);
-    bool config_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+    bool config_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
     bool config_update(WEB *web, ClientHandle client, const JSONMap &msgmap);
     bool config_get_wifi(WEB *web, ClientHandle client, const JSONMap &msgmap);
     bool config_scan_wifi(WEB *web, ClientHandle client, const JSONMap &msgmap);
     static bool config_scan_complete(WEB *web, ClientHandle client, const WiFiScanData &data, void *user_data);
     static void config_wifi_message(WEB *web, std::string &message);
-    bool test_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+    bool test_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
     bool test_send(WEB *web, ClientHandle client, const JSONMap &msgmap);
     bool test_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap);
-    bool log_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-    bool log_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-    bool prompt_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-    bool prompt_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+    bool log_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    bool log_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    bool prompt_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    bool prompt_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
 
     void list_files();
     void get_references(std::set<std::string> &files, std::set<std::string> &references);
@@ -124,8 +124,8 @@ private:
     struct URLPROC
     {
         std::regex url_match;
-        bool (Remote::* get)(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
-        bool (Remote::* post)(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close);
+        bool (Remote::* get)(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+        bool (Remote::* post)(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
     };
     static struct URLPROC funcs[];
 

@@ -6,7 +6,7 @@
 #include "txt.h"
 #include "web_files.h"
 
-bool Remote::menu_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::menu_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     const char *data;
@@ -65,7 +65,7 @@ bool Remote::menu_get(WEB *web, ClientHandle client, const HTTPRequest &rqst, bo
     return ret;
 }
 
-bool Remote::menu_post(WEB *web, ClientHandle client, const HTTPRequest &rqst, bool &close)
+bool Remote::menu_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
 {
     bool ret = false;
     //rqst.printPostData();

@@ -29,7 +29,7 @@ public:
      * 
      * @return  true if successful
      */
-    static bool loadBackup(const HTTPRequest &post, std::string &msg);
+    static bool loadBackup(HTTPRequest &post, std::string &msg);
 
     /**
      * @brief   Download backup of a file
@@ -39,7 +39,7 @@ public:
      * @param   rqst        POST request
      * 
      */
-    static bool saveBackup(WEB *web, ClientHandle client, const HTTPRequest &rqst);
+    static bool saveBackup(WEB *web, ClientHandle client, HTTPRequest &rqst);
 };
 
 #endif
