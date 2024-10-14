@@ -42,7 +42,6 @@ bool IR_Processor::do_command(Command *cmd)
         cmd->setReply(cmd->action());
         if (!send(cmd))
         {
-            cmd->setReply(cmd->action(), false);
             do_reply(cmd);
         }
     }
@@ -117,7 +116,7 @@ bool IR_Processor::send(Command *cmd)
     }
     else
     {
-        cmd->setReply("busy");
+        cmd->setReply("busy", false);
     }
     return ret;
 }
