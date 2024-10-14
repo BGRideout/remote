@@ -48,18 +48,16 @@ const char *Backup::hdrs[] =
 
 #define SEGSize(idx) strlen(hdrs[idx])
 
-bool Backup::loadBackup(const HTTPRequest &post, std::string &msg)
+bool Backup::loadBackup(HTTPRequest &post, std::string &msg)
 {
     bool ret = false;
     std::string filename = post.postValue("actfile.filename");
-    const char *actfile = post.postValue("actfile");
+    char *actfile = post.postValue("actfile");
     size_t la = strlen(actfile);
-    char *data = new char[la + 1];
-    memcpy(data, actfile, la + 1);
-    data[la] = 0;
-    json_t jbuf[la / 4];
 
-    json_t const* json = json_create(data, jbuf, sizeof jbuf / sizeof *jbuf );
+    uint32_t nj = la / 8;
+    json_t jbuf[nj];
+    json_t const* json = json_create(actfile, jbuf, nj );
     if (json)
     {
         const json_t *prop = json_getProperty(json, "backup");
@@ -87,11 +85,17 @@ bool Backup::loadBackup(const HTTPRequest &post, std::string &msg)
             {
                 ret = loadBackupFile(json, filename.c_str());
             }
+            if (!ret)
+            {
+                printf("Error loading %s\n", filename.c_str());
+            }
         }
     }
+    else
+    {
+        printf("Error parsing JSON:\n");
+    }
 
-    delete [] data;
-    
     return ret;
 }
 
@@ -121,7 +125,7 @@ bool Backup::loadBackupFile(const json_t *json, const char *filename)
     return ret;
 }
 
-bool Backup::saveBackup(WEB *web, ClientHandle client, const HTTPRequest &rqst)
+bool Backup::saveBackup(WEB *web, ClientHandle client, HTTPRequest &rqst)
 {
     bool ret = true;
     std::string msg("Success");
@@ -152,6 +156,7 @@ bool Backup::saveBackup(WEB *web, ClientHandle client, const HTTPRequest &rqst)
     {
         cl += fileSegmentSize(it->c_str());
     }
+    cl += files.size() - 1;  // For commas between files
 
     // Send header and backup header
     std::string resp(hdrs[HTTP_HDR_1]);
@@ -164,9 +169,11 @@ bool Backup::saveBackup(WEB *web, ClientHandle client, const HTTPRequest &rqst)
     web->send_data(client, resp.c_str(), resp.length());
 
     // Send file segments
+    std::string sep;
     for (auto it = files.cbegin(); it != files.cend(); ++it)
     {
-        resp = hdrs[FILE_HDR_1] + *it + hdrs[FILE_HDR_2];
+        resp = sep + hdrs[FILE_HDR_1] + *it + hdrs[FILE_HDR_2];
+        sep = ",";
         web->send_data(client, resp.c_str(), resp.length());
 
         char *data = fileData(it->c_str());
@@ -175,11 +182,11 @@ bool Backup::saveBackup(WEB *web, ClientHandle client, const HTTPRequest &rqst)
             web->send_data(client, data, fileSize(it->c_str()));
             delete [] data;
         }
-        web->send_data(client, hdrs[FILE_TRAILER], SEGSize(FILE_TRAILER));
+        web->send_data(client, hdrs[FILE_TRAILER], SEGSize(FILE_TRAILER), WEB::STAT);
     }
 
     // Send backup trailer
-    web->send_data(client, hdrs[BACKUP_TRAILER], SEGSize(BACKUP_TRAILER));
+    web->send_data(client, hdrs[BACKUP_TRAILER], SEGSize(BACKUP_TRAILER), WEB::STAT);
 
     return ret;
 }
