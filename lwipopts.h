@@ -8,6 +8,7 @@
 #define MEM_LIBC_MALLOC             0
 #define MEM_ALIGNMENT               4
 #define MEM_SIZE                    16384
+#define MEMP_NUM_TCP_PCB            12
 #define MEMP_NUM_TCP_SEG            96
 #define MEMP_NUM_ARP_QUEUE          10
 #define PBUF_POOL_SIZE              24
@@ -25,7 +26,7 @@
 #define LWIP_NETCONN                0
 #define MEM_STATS                   0
 #define SYS_STATS                   0
-#define MEMP_STATS                  0
+#define MEMP_STATS                  1
 #define LINK_STATS                  0
 #define LWIP_CHKSUM_ALGORITHM       3
 #define LWIP_DHCP                   1
@@ -55,8 +56,8 @@
 #define IP_DEBUG                    LWIP_DBG_OFF
 #define IP_REASS_DEBUG              LWIP_DBG_OFF
 #define RAW_DEBUG                   LWIP_DBG_OFF
-#define MEM_DEBUG                   LWIP_DBG_OFF
-#define MEMP_DEBUG                  LWIP_DBG_OFF
+#define MEM_DEBUG                   LWIP_DBG_ON
+#define MEMP_DEBUG                  LWIP_DBG_ON
 #define SYS_DEBUG                   LWIP_DBG_OFF
 #define TCP_DEBUG                   LWIP_DBG_OFF
 #define TCP_INPUT_DEBUG             LWIP_DBG_OFF
@@ -86,7 +87,7 @@
 #define LWIP_ALTCP                  1
 #define LWIP_ALTCP_TLS              1
 #define LWIP_ALTCP_TLS_MBEDTLS      1
-#define MEMP_NUM_TCP_PCB            8
+#define MEMP_NUM_ALTCP_PCB          (MEMP_NUM_TCP_PCB + 2)
 #define ALTCP_MBEDTLS_DEBUG         LWIP_DBG_ON
 #define ALTCP_MBEDTLS_LIB_DEBUG     LWIP_DBG_ON
 

@@ -119,11 +119,7 @@ bool Remote::setup_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &
             }
         }
 
-        std::string resp("HTTP/1.1 303 OK\r\nLocation: " + url + "\r\n"
-                         "Connection: keep-alive\r\n\r\n");
-        web->send_data(client, resp.c_str(), resp.length());
-        close = false;
-        ret = true;
+        ret = setup_get(web, client, rqst, close);
     }
 
     return ret;
@@ -342,11 +338,18 @@ bool Remote::setup_btn_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bo
             url = base_url + "/setup";
         }
 
-        std::string resp("HTTP/1.1 303 OK\r\nLocation: " + url + "\r\n"
-                         "Connection: keep-alive\r\n\r\n");
-        web->send_data(client, resp.c_str(), resp.length());
-        close = false;
-        ret = true;
+        if (url == rqst.root())
+        {
+            ret = setup_btn_get(web, client, rqst, close);
+        }
+        else
+        {
+            std::string resp("HTTP/1.1 303 OK\r\nLocation: " + url + "\r\n"
+                            "Connection: keep-alive\r\n\r\n");
+            web->send_data(client, resp.c_str(), resp.length());
+            close = false;
+            ret = true;
+        }
     }
     return ret;
 }

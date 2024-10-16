@@ -6,6 +6,8 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 
+set(PICO_LWIP_PATH ${PICO_SDK_PATH}/../lwip)
+
 set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS 3000)
 
 # Pull in Raspberry Pi Pico SDK (must be before project)

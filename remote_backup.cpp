@@ -37,10 +37,19 @@ bool Remote::backup_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &
 
         TXT html(data, datalen, 2048);
         html.substitute("<?files?>", files);
-        std::string val = rqst.cookie("msg");
-        html.substitute("<?msg?>", val);
-        val = rqst.cookie("msgcolor", "transparent");
-        html.substitute("<?msgcolor?>", val);
+
+        std::vector<std::string> msg_color;
+        TXT::split(rqst.userData(), "|", msg_color);
+        if (msg_color.size() == 2)
+        {
+            html.substitute("<?msg?>", msg_color.at(0));
+            html.substitute("<?msgcolor?>", msg_color.at(1));
+        }
+        else
+        {
+            html.substitute("<?msg?>", "");
+            html.substitute("<?msgcolor?>", "transparent");
+        }
         
         ret = send_http(web, client, html, close);
     }
@@ -72,12 +81,7 @@ bool Remote::backup_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool 
         msg = "Invalid button";
     }
 
-    std::string resp("HTTP/1.1 303 OK\r\nLocation: /backup\r\n"
-                    "Set-Cookie: msg=<?msg?>; Max-Age=5\r\n"
-                    "Set-Cookie: msgcolor=<?msgcolor?>; Max-Age=5\r\n"
-                    "Connection: keep-alive\r\n\r\n");
-    TXT::substitute(resp, "<?msg?>", msg);
-    TXT::substitute(resp, "<?msgcolor?>", ret ? "green" : "red");
-    web->send_data(client, resp.c_str(), resp.length());
-    return ret;
+    msg += ret ? "|green" : "|red";
+    rqst.setUserData(msg);
+    return backup_get(web, client, rqst, close);
 }
