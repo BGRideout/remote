@@ -58,7 +58,7 @@ bool Remote::init(int indicator_gpio, int button_gpio)
 {
     indicator_ = new Indicator(indicator_gpio);
     button_ = new Button(0, button_gpio);
-    button_->setEventCallback(button_event);
+    button_->setEventCallback(button_event, this);
 
     queue_init(&exec_queue_, sizeof(Command *), 8);
     queue_init(&resp_queue_, sizeof(Command *), 8);
@@ -68,9 +68,9 @@ bool Remote::init(int indicator_gpio, int button_gpio)
     
     WEB *web = WEB::get();
     web->setLogger(log_);
-    web->set_http_callback(http_message_);
-    web->set_message_callback(ws_message_);
-    web->set_notice_callback(web_state);
+    web->set_http_callback(http_message_, this);
+    web->set_message_callback(ws_message_, this);
+    web->set_notice_callback(web_state, this);
     bool ret = web->init();
     if (ret)
     {
@@ -347,29 +347,30 @@ void Remote::get_replies()
     }
 }
 
-void Remote::ir_busy(bool busy)
+void Remote::ir_busy(bool busy, void *udata)
 {
-    get()->indicator_->setIRState(busy);
+    static_cast<Remote *>(udata)->indicator_->setIRState(busy);
 }
 
-void Remote::web_state(int state)
+void Remote::web_state(int state, void *udata)
 {
-    get()->indicator_->setWebState(state);
+    Remote *self = static_cast<Remote *>(udata);
+    self->indicator_->setWebState(state);
     if (state == WEB::STA_CONNECTED)
     {
         WEB *web = WEB::get();
         std::string resp;
         config_wifi_message(web, resp);
-        get()->log_->print("WiFi connect message: %s\n", resp.c_str());
+        self->log_->print("WiFi connect message: %s\n", resp.c_str());
         web->broadcast_websocket(resp);
     }
 }
 
-void Remote::button_event(struct Button::ButtonEvent &ev)
+void Remote::button_event(struct Button::ButtonEvent &ev, void *user_data)
 {
     if (ev.action == Button::Button_Clicked)
     {
-        get()->log_->print("Start WiFi AP fo 30 minutes\n");
+        static_cast<Remote *>(user_data)->log_->print("Start WiFi AP fo 30 minutes\n");
         WEB::get()->enable_ap(30, "webremote");
     }
 }
@@ -499,12 +500,13 @@ int main ()
         return -1;
     }
 
-    Remote::get()->setDebug(CONFIG::get()->debug());
-    Remote::get()->cleanupFiles();
-    Remote::get()->init(INDICATOR_GPIO, BUTTON_GPIO);
+    Remote *remote = Remote::get();
+    remote->setDebug(CONFIG::get()->debug());
+    remote->cleanupFiles();
+    remote->init(INDICATOR_GPIO, BUTTON_GPIO);
 
     IR_Processor *ir = new IR_Processor(Remote::get(), IR_SEND_GPIO, IR_RCV_GPIO);
-    ir->setBusyCallback(Remote::ir_busy);
+    ir->setBusyCallback(remote->ir_busy, remote);
     ir->run();
 
     return 0;

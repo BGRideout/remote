@@ -63,10 +63,11 @@ private:
     bool get_efile(const std::string &url, WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
 
     bool http_message(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
-    static bool http_message_(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close)
-     { return Remote::get()->http_message(web, client, rqst, close); }
+    static bool http_message_(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close, void *udata)
+     { return static_cast<Remote *>(udata)->http_message(web, client, rqst, close); }
     void ws_message(WEB *web, ClientHandle client, const std::string &msg);
-    static void ws_message_(WEB *web, ClientHandle client, const std::string &msg) { Remote::get()->ws_message(web, client, msg); }
+    static void ws_message_(WEB *web, ClientHandle client, const std::string &msg, void *udata)
+     { static_cast<Remote *>(udata)->ws_message(web, client, msg); }
 
     bool send_http(WEB *web, ClientHandle client, TXT &html, bool &close);
 
@@ -145,9 +146,9 @@ public:
     Command *getNextCommand();
     void commandReply(Command *command);
 
-    static void ir_busy(bool busy);
-    static void web_state(int state);
-    static void button_event(struct Button::ButtonEvent &ev);
+    static void ir_busy(bool busy, void *udata);
+    static void web_state(int state, void *udata);
+    static void button_event(struct Button::ButtonEvent &ev, void *user_data);
 
     /**
      * @brief   Cleanup files

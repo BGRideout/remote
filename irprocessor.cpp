@@ -8,7 +8,7 @@
 #include <pico/stdlib.h>
 
 IR_Processor::IR_Processor(Remote *remote, int gpio_send, int gpio_receive)
-     : remote_(remote), busy_(0), busy_cb_(nullptr)
+     : remote_(remote), busy_(0), busy_cb_(nullptr), user_data_(nullptr)
 {
     asy_ctx_ = cyw43_arch_async_context();
     ir_device_ = new IR_Device(gpio_send, gpio_receive, asy_ctx_);
@@ -164,7 +164,7 @@ void IR_Processor::add_to_busy(int add)
     {
         if (busy_cb_)
         {
-            busy_cb_(busy_ != 0);
+            busy_cb_(busy_ != 0, user_data_);
         }
     }
 }

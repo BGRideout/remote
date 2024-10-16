@@ -140,7 +140,8 @@ private:
 
     int                             busy_;              // Busy counter
     void add_to_busy(int add);
-    void (*busy_cb_)(bool busy);
+    void (*busy_cb_)(bool busy, void *user_data);
+    void *user_data_;
 
     bool do_command(Command *cmd);
     bool do_reply(Command *cmd);
@@ -156,7 +157,7 @@ public:
 
     void run();
 
-    void setBusyCallback(void (*busy_cb)(bool busy)) { busy_cb_ = busy_cb; }
+    void setBusyCallback(void (*busy_cb)(bool busy, void *user_data), void *user_data) { busy_cb_ = busy_cb; user_data_ = user_data; }
 };
 
 #endif
