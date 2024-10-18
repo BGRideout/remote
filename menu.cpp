@@ -59,11 +59,16 @@ bool Menu::loadJSON(const json_t *json, const char *filename)
 bool Menu::load()
 {
     bool ret = false;
-    json_t jbuf[datasize_ / 4];
-    json_t const* json = json_create(data_, jbuf, sizeof jbuf / sizeof *jbuf );
+    int nj = JSONMap::itemCount(data_);
+    json_t jbuf[nj];
+    json_t const* json = json_create(data_, jbuf, nj);
     if (json)
     {
         ret = loadJSON(json);
+    }
+    else
+    {
+        printf("Failed to load menu JSON\n");
     }
     return ret;
 }

@@ -26,8 +26,13 @@
 Remote *Remote::singleton_ = nullptr;
 int Remote::debug_level_ = 0;
 
+//  File system definition
 #define ROOT_OFFSET 0x110000
-#define ROOT_SIZE   0x0EF000
+#ifndef PICO_FLASH_BANK_TOTAL_SIZE
+#define ROOT_SIZE   (PICO_FLASH_SIZE_BYTES - ROOT_OFFSET)
+#else
+#define ROOT_SIZE   (PICO_FLASH_SIZE_BYTES - ROOT_OFFSET - PICO_FLASH_BANK_TOTAL_SIZE)       // Leave 8K for bluetooth
+#endif
 
 struct Remote::URLPROC Remote::funcs[] =
     {

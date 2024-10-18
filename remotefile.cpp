@@ -2,6 +2,7 @@
 
 #include "remotefile.h"
 #include "txt.h"
+#include "jsonmap.h"
 #include <algorithm>
 #include <dirent.h>
 #include <sstream>
@@ -73,11 +74,16 @@ bool RemoteFile::loadJSON(const json_t *json, const char *filename)
 bool RemoteFile::load()
 {
     bool ret = false;
-    json_t jbuf[datasize_ / 4];
-    json_t const* json = json_create(data_, jbuf, sizeof jbuf / sizeof *jbuf );
+    int nj = JSONMap::itemCount(data_);
+    json_t jbuf[nj];
+    json_t const* json = json_create(data_, jbuf, nj);
     if (json)
     {
         ret = loadJSON(json);
+    }
+    else
+    {
+        printf("Error loading action file JSON\n");
     }
     return ret;
 }
