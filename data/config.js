@@ -67,7 +67,7 @@ function config_update()
   {
     cmd += ' ,"' + inp.name + '": "' + encodeURI(inp.value) + '"';
   }
-  cmd += ', "path": "' + document.location.pathname + '"}"';
+  cmd += ', "path": "' + document.location.pathname + '"}';
   console.log(cmd);
   sendToWS(cmd);
 }
