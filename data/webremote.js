@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", function()
     }
     
     document.addEventListener('ws_message', process_ws_message);
+    document.addEventListener('ws_state', ()=>{showLED("off");});
     showLED("off");
 });
 
@@ -137,19 +138,27 @@ function start_hold(ix)
 function showLED(state)
 {
     led = document.getElementById("led")
-    if (state == "on")
+    if (isWSOpen())
     {
-        led.innerHTML = "<svg viewbox='0 0 25 25' width='25' height='25' xmlns='http://www.w3.org/2000/svg'>" +
-                        "<circle cx='12' cy='12' r='12' fill='red' stroke='white' stroke-width='3' /></svg>"
-    }
-    else if (state == "busy")
-    {
-        led.innerHTML = "<svg viewbox='0 0 25 25' width='25' height='25' xmlns='http://www.w3.org/2000/svg'>" +
-                        "<circle cx='12' cy='12' r='12' fill='red' stroke='orange' stroke-width='3' /></svg>"
+        if (state == "on")
+        {
+            led.innerHTML = "<svg viewbox='0 0 25 25' width='25' height='25' xmlns='http://www.w3.org/2000/svg'>" +
+                            "<circle cx='12' cy='12' r='12' fill='red' stroke='white' stroke-width='3' /></svg>"
+        }
+        else if (state == "busy")
+        {
+            led.innerHTML = "<svg viewbox='0 0 25 25' width='25' height='25' xmlns='http://www.w3.org/2000/svg'>" +
+                            "<circle cx='12' cy='12' r='12' fill='red' stroke='orange' stroke-width='3' /></svg>"
+        }
+        else
+        {
+            led.innerHTML = "<svg viewbox='0 0 25 25' width='25' height='25' xmlns='http://www.w3.org/2000/svg'>" +
+                            "<circle cx='12' cy='12' r='12' fill='#660000' stroke='white' stroke-width='3' /></svg>"
+        }
     }
     else
     {
         led.innerHTML = "<svg viewbox='0 0 25 25' width='25' height='25' xmlns='http://www.w3.org/2000/svg'>" +
-                        "<circle cx='12' cy='12' r='12' fill='#660000' stroke='white' stroke-width='3' /></svg>"
+        "<circle cx='12' cy='12' r='12' fill='black' stroke='black' stroke-width='3' /></svg>"
     }
 }

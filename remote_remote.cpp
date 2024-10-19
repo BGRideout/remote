@@ -93,7 +93,7 @@ bool Remote::remote_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &
 bool Remote::remote_button(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     bool ret = false;
-    if (isDebug(1)) log_->print("btnVal = %d, action = %s path = %s duration = %f\n",
+    log_->print_debug(1, "btnVal = %d, action = %s path = %s duration = %f\n",
         msgmap.intValue("btnVal"), msgmap.strValue("action"), msgmap.strValue("path"), msgmap.realValue("duration"));
 
     int button = msgmap.intValue("btnVal");

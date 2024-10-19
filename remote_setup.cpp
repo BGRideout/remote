@@ -136,7 +136,7 @@ bool Remote::setup_btn_get(WEB *web, ClientHandle client, HTTPRequest &rqst, boo
         std::string base_url = match[1].str();
         if (base_url.empty()) base_url = "/";
         int pos = to_u16(match[3].str());
-        if (isDebug(1)) log_->print("GET '%s' button at %d\n", base_url.c_str(), pos);
+        log_->print_debug(1, "GET '%s' button at %d\n", base_url.c_str(), pos);
 
         ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
@@ -214,7 +214,7 @@ bool Remote::setup_btn_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bo
     {
         std::string base_url = match[1].str();
         int pos = to_u16(match[3].str());
-        if (isDebug(1)) log_->print("POST '%s' button at %d\n", base_url.c_str(), pos);
+        log_->print_debug(1, "POST '%s' button at %d\n", base_url.c_str(), pos);
 
         ret = get_efile(base_url, web, client, rqst, close);
         if (!ret)
@@ -357,7 +357,7 @@ bool Remote::setup_btn_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bo
 bool Remote::setup_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     bool ret = false;
-    if (isDebug(1)) log_->print("ir_get = %d, path = %s\n",
+    log_->print_debug(1, "ir_get = %d, path = %s\n",
         msgmap.intValue("ir_get"), msgmap.strValue("path"));
 
     int row = msgmap.intValue("ir_get");
@@ -368,7 +368,7 @@ bool Remote::setup_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap)
     {
         std::string base_url = match[1].str();
         int pos = to_u16(match[3].str().c_str());
-        if (isDebug(1)) log_->print("IR_Get '%s' button %d row %d\n", base_url.c_str(), pos, row);
+        log_->print_debug(1, "IR_Get '%s' button %d row %d\n", base_url.c_str(), pos, row);
 
         ret = get_efile(base_url);
         RemoteFile::Button *btn = efile_.getButton(pos);

@@ -11,6 +11,7 @@
 #include <pico/async_context.h>
 
 class RAW_Receiver;
+class Logger;
 
 class IR_Device
 {
@@ -24,6 +25,7 @@ private:
     RAW_Receiver    *raw_;                      // Raw IR data rreceiver
     uint32_t        *times_;                    // Read times
     uint32_t        n_times_;                   // Number of read times
+    Logger          *log_;                      // Logger
 
     //  *****  Protocol mapping  *****
     struct IRMap
@@ -59,6 +61,8 @@ public:
     void release_rx() { if (rx_ir_led_) delete rx_ir_led_; rx_ir_led_ = nullptr; }
 
     void identify(void (*cb)(const std::string &type, uint16_t address, uint16_t value, void *data), void *data);
+
+    void setLogger(Logger *logger) { log_ = logger; }
 };
 
 #endif

@@ -24,7 +24,6 @@
 #include <unistd.h>
 
 Remote *Remote::singleton_ = nullptr;
-int Remote::debug_level_ = 0;
 
 //  File system definition
 #define ROOT_OFFSET 0x110000
@@ -169,7 +168,7 @@ bool Remote::http_message(WEB *web, ClientHandle client, HTTPRequest &rqst, bool
 {
     bool ret = false;
 
-    if (isDebug(1)) log_->print("%d HTTP %s %s\n", client, rqst.type().c_str(), rqst.url().c_str());
+    log_->print_debug(1, "%d HTTP %s %s\n", client, rqst.type().c_str(), rqst.url().c_str());
     if (rqst.type() == "GET")
     {
         ret = http_get(web, client, rqst, close);
@@ -188,7 +187,7 @@ void Remote::ws_message(WEB *web, ClientHandle client, const std::string &msg)
     const char *path = msgmap.strValue("path");
     if (func && path)
     {
-        if (isDebug(1)) log_->print("%d WS func=%s, path=%s\n", client, func, path);
+        log_->print_debug(1, "%d WS func=%s, path=%s\n", client, func, path);
         bool found = false;
         for (int ii = 0; ii < count_of(wsproc); ii++)
         {
@@ -346,7 +345,7 @@ void Remote::get_replies()
     Command *cmd = nullptr;
     while (queue_try_remove(&resp_queue_, &cmd))
     {
-        if (isDebug(1)) log_->print("Reply: %s\n", cmd->reply().c_str());
+        log_->print_debug(1, "Reply: %s\n", cmd->reply().c_str());
         cmd->web()->send_message(cmd->client(), cmd->reply());
         delete cmd;
     }
@@ -416,9 +415,8 @@ void Remote::time_callback()
 
 void Remote::setDebug(int level)
 {
-    debug_level_ = level;
-    WEB::get()->setDebug(debug_level_);
-    CONFIG::get()->set_debug(debug_level_);
+    log_->setDebug(level);
+    CONFIG::get()->set_debug(level);
 }
 
 //      *****  Indicator  *****

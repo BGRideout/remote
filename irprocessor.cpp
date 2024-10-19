@@ -14,6 +14,8 @@ IR_Processor::IR_Processor(Remote *remote, int gpio_send, int gpio_receive)
     ir_device_ = new IR_Device(gpio_send, gpio_receive, asy_ctx_);
     send_worker_ = new SendWorker(this, asy_ctx_);
     repeat_worker_ = new RepeatWorker(this, asy_ctx_, send_worker_);
+
+    ir_device_->setLogger(remote_->logger());
 }
 
 void IR_Processor::run()
@@ -196,7 +198,7 @@ void IR_Processor::SendWorker::time_work()
     {
         uint32_t elapsed = to_ms_since_boot(get_absolute_time()) - start_time_;
         Command::Step step = getStep(ii, true);
-        if (Remote::isDebug(1))
+        if (irp_->remote_->logger()->isDebug(1))
         {
             printf("%5d Step %2d: '%s' %d %d %d repeat=%s\n",
                 elapsed, ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
@@ -223,7 +225,7 @@ void IR_Processor::SendWorker::time_work()
         else if (getMenuSteps(step))
         {
             step = getStep(ii, true);
-            if (Remote::isDebug(1))
+            if (irp_->remote_->logger()->isDebug(1))
             {
                 printf("%5d Step %2d: '%s' %d %d %d repeat=%s\n",
                     elapsed, ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
@@ -398,7 +400,7 @@ void IR_Processor::RepeatWorker::time_work()
             }
             else
             {
-                printf("Stop repeating at limit\n");
+                irp_->remote_->logger()->print_debug(1, "Stop repeating at limit\n");
                 finish();
             }
         }

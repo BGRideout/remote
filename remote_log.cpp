@@ -37,7 +37,7 @@ bool Remote::log_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &clo
 
         html.substitute("<?from?>", bgnl);
         html.substitute("<?to?>", endl);
-        html.substitute("<?dbglvl?>", debug_level_);
+        html.substitute("<?dbglvl?>", log_->debugLevel());
 
         uint32_t pos = html.find("<?lines?>");
         html.replace(pos, 9, "");

@@ -40,7 +40,7 @@ bool Remote::test_send(WEB *web, ClientHandle client, const JSONMap &msgmap)
 bool Remote::test_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap)
 {
     bool ret = true;
-    if (isDebug(1)) log_->print("test_ir_get, path = %s\n", msgmap.strValue("path"));
+    log_->print_debug(1, "test_ir_get, path = %s\n", msgmap.strValue("path"));
 
     Command *cmd = new Command(web, client, msgmap, nullptr);
     queue_command(cmd);

@@ -7,6 +7,7 @@
 #include "sony_transmitter.h"
 #include "sony_receiver.h"
 #include "raw_receiver.h"
+#include "logger.h"
 #include <stdio.h>
 
 #define IR_DEVICE_SAMPLES   256             // Maximum samples to read
@@ -28,7 +29,7 @@ IR_Receiver *IR_Device::new_NEC_rx(int gpio) { return new NEC_Receiver(gpio); }
 
 IR_Device::IR_Device(int tx_gpio, int rx_gpio, async_context_t *asy_ctx)
      : tx_gpio_(tx_gpio), rx_gpio_(rx_gpio), tx_ir_led_(nullptr), rx_ir_led_(nullptr),
-       asy_ctx_(asy_ctx), raw_(nullptr), times_(nullptr), n_times_(0), cb_(nullptr), user_data_(nullptr)
+       asy_ctx_(asy_ctx), raw_(nullptr), times_(nullptr), n_times_(0), log_(nullptr), cb_(nullptr), user_data_(nullptr)
 {
     read_complete_ = {.do_work = read_done, .user_data = this};
     async_context_add_when_pending_worker(asy_ctx, &read_complete_);
@@ -98,6 +99,7 @@ void IR_Device::ir_rcv(uint64_t timestamp, uint16_t address, uint16_t value, IR_
 bool IR_Device::ir_tmo(bool msg, uint32_t n_pulse, uint32_t const *pulses, IR_Receiver *obj)
 {
     IR_Device *self = static_cast<IR_Device *>(obj->user_data());
+    if (self->log_) self->log_->print("identify: %s timeout. Read %d pulses\n", msg ? "message" : "pulse", n_pulse);
     async_context_set_work_pending(self->asy_ctx_, &self->read_complete_);
     return false;
 }
@@ -110,13 +112,16 @@ void IR_Device::read_done(async_context_t *ctx, async_when_pending_worker_t *wor
 
 void IR_Device::read_done()
 {
-    printf("Read %d times:", n_times_);
-    for (uint32_t ii = 0; ii < n_times_; ii++)
+    if (log_)
     {
-        if ((ii % 10) == 0) printf("\n");
-        printf(" %d", times_[ii]);
+        log_->print_debug(1, "Read %d times:", n_times_);
+        for (uint32_t ii = 0; ii < n_times_; ii++)
+        {
+            if ((ii % 10) == 0) log_->print_debug(1, "\n");
+            log_->print_debug(1, " %d", times_[ii]);
+        }
+        log_->print_debug(1, "\n");
     }
-    printf("\n");
     if (raw_)
     {
         delete raw_;
@@ -138,7 +143,7 @@ void IR_Device::read_done()
         }
     }
 
-    printf("Result: '%s' %d %d\n", type.c_str(), address, value);
+    if (log_) log_->print("identify: result: '%s' %d %d\n", type.c_str(), address, value);
 
     if (cb_)
     {
