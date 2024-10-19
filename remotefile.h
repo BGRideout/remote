@@ -6,6 +6,7 @@
 #include "jsonstring.h"
 #include <string>
 #include <string.h>
+#include <list>
 #include <set>
 #include <vector>
 #include <tiny-json.h>
@@ -145,7 +146,7 @@ public:
         void clearModified();
     };
 
-    typedef std::vector<Button> ButtonList;
+    typedef std::list<Button> ButtonList;
 
 private:
     JSONString              filename_;          // Loaded file name
@@ -168,7 +169,7 @@ public:
     void setTitle(const char *title) { modified_ |= strcmp(title_.str(), title) != 0; title_ = title; }
 
     /**
-     * @brief   Access the map of buttons
+     * @brief   Access the list of buttons
      * 
      * @return  Reference to the list of buttons
      */

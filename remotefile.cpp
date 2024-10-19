@@ -97,12 +97,6 @@ bool RemoteFile::loadJSON(const json_t *json)
     json_t const *buttons = json_getProperty(json, "buttons");
     if (buttons && json_getType(buttons) == JSON_ARRAY)
     {
-        int nb = 0;
-        for (json_t const *button = json_getChild(buttons); button != nullptr; button = json_getSibling(button))
-        {
-            nb++;
-        }
-        buttons_.reserve(nb);
         for (json_t const *button = json_getChild(buttons); ret && button != nullptr; button = json_getSibling(button))
         {
             json_t const *pos = json_getProperty(button, "pos");
@@ -190,10 +184,6 @@ RemoteFile::Button *RemoteFile::addButton(int position, const char *label, const
         btn = getButton(position);
         if (!btn)
         {
-            if (buttons_.size() == buttons_.capacity())
-            {
-                buttons_.reserve(buttons_.size() + 16);
-            }
             auto i1 = std::lower_bound(buttons_.begin(), buttons_.end(), Button(position));
             auto i2 = buttons_.emplace(i1, position, label, color, redirect, repeat);
             btn = &(*i2);
@@ -234,7 +224,7 @@ bool RemoteFile::changePosition(Button *button, int newpos)
             other->setPosition(button->position());
         }
         button->setPosition(newpos);
-        std::sort(buttons_.begin(), buttons_.end());
+        buttons_.sort();
     }
 
     return ret;
