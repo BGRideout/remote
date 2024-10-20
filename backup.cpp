@@ -54,34 +54,92 @@ bool Backup::loadBackup(HTTPRequest &post, std::string &msg)
     std::string filename = post.postValue("actfile.filename");
     char *actfile = post.postValue("actfile");
 
-    uint32_t nj = JSONMap::itemCount(actfile);
-    json_t jbuf[nj];
-    json_t const* json = json_create(actfile, jbuf, nj);
-    if (json)
+    if (strncmp(actfile, "{\"backup\":", 10) == 0)
     {
-        const json_t *prop = json_getProperty(json, "backup");
-        if (prop)
+        size_t la = strlen(actfile);
+        char *ptr1 = actfile + 10;
+        while (ptr1 - actfile < la)
         {
-            if (json_getType(prop) == JSON_ARRAY)
+            while (*ptr1 != '\0' && *ptr1 != '{')
             {
-                for (const json_t *act = json_getChild(prop); act != nullptr; act = json_getSibling(act))
+                ++ptr1;
+            }
+            if (*ptr1 == '{')
+            {
+                int depth = 1;
+                bool quoted = false;
+                char *ptr2 = ptr1 + 1;
+                while (*ptr2 != '\0' && depth > 0)
                 {
-                    filename = json_getPropertyValue(act, "file");
-                    const json_t *actions = json_getProperty(act, "data");
-                    ret = loadBackupFile(actions, filename.c_str());
+                    if (!quoted && *ptr2 == '{')
+                    {
+                        ++depth;
+                    }
+                    else if (!quoted && *ptr2 == '}')
+                    {
+                        --depth;
+                    }
+                    else if (!quoted && *ptr2 == '"')
+                    {
+                        quoted == true;
+                    }
+                    else if (quoted && *ptr2 == '"')
+                    {
+                        if (ptr2[-1] != '\\')
+                        {
+                            quoted = false;
+                        }
+                    }
+                    ++ptr2;
                 }
+                if (ptr2[-1] == '}')
+                {
+                    *ptr2++ = '\0';
+                    uint32_t nj = JSONMap::itemCount(ptr1);
+                    json_t jbuf[nj];
+                    json_t const* json = json_create(ptr1, jbuf, nj);
+                    if (json)
+                    {
+                        const json_t *prop = json_getProperty(json, "data");
+                        if (prop)
+                        {
+                            filename = json_getPropertyValue(json, "file");
+                            printf("Loading file %s\n", filename.c_str());
+                            ret = loadBackupFile(prop, filename.c_str());
+                            if (!ret)
+                            {
+                                printf("Error loading %s\n", filename.c_str());
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        printf("Error parsing JSON for backup\n");
+                        break;
+                    }
+                }
+                ptr1 = ptr2;
             }
         }
-        else
+    }
+    else
+    {
+        uint32_t nj = JSONMap::itemCount(actfile);
+        json_t jbuf[nj];
+        json_t const* json = json_create(actfile, jbuf, nj);
+        if (json)
         {
-            prop = json_getProperty(json, "data");
+            const json_t *prop = json_getProperty(json, "data");
             if (prop)
             {
                 filename = json_getPropertyValue(json, "file");
+                printf("Loading file %s\n", filename.c_str());
                 ret = loadBackupFile(prop, filename.c_str());
             }
             else
             {
+                printf("Loading file %s\n", filename.c_str());
                 ret = loadBackupFile(json, filename.c_str());
             }
             if (!ret)
@@ -89,10 +147,10 @@ bool Backup::loadBackup(HTTPRequest &post, std::string &msg)
                 printf("Error loading %s\n", filename.c_str());
             }
         }
-    }
-    else
-    {
-        printf("Error parsing JSON for backup\n");
+        else
+        {
+            printf("Error parsing JSON for backup\n");
+        }
     }
 
     return ret;
