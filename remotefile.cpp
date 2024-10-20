@@ -106,7 +106,7 @@ bool RemoteFile::loadJSON(const json_t *json)
                 if (position > 0 && !getButton(position))
                 {
                     auto i1 = std::lower_bound(buttons_.begin(), buttons_.end(), Button(position));
-                    auto i2 = buttons_.emplace(i1, Button());
+                    auto i2 = buttons_.emplace(i1, position);
                     ret = i2->loadFromJSON(button);
                 }
             }

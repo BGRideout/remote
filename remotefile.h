@@ -71,6 +71,9 @@ public:
 
         void setPosition(int position) { modified_ = position_ != position; position_ = position; }
 
+        Button(const Button &);
+        Button &operator =(const Button &);
+
     public:
         Button() : repeat_(0), position_(0), modified_(false) {}
         Button(int position) : repeat_(0), position_(position), modified_(false) {}
@@ -158,6 +161,9 @@ private:
 
     bool load();
     bool loadJSON(const json_t *json);
+
+    RemoteFile(const RemoteFile &);
+    RemoteFile &operator =(const RemoteFile &);
 
 public:
     RemoteFile() : data_(nullptr), datasize_(0), modified_(false) {}
