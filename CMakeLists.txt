@@ -6,15 +6,12 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 
-set(PICO_LWIP_PATH ${PICO_SDK_PATH}/../lwip)
+#set(PICO_LWIP_PATH ${PICO_SDK_PATH}/../lwip)
 
 set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS 3000)
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include($ENV{PICO_SDK_PATH}/pico_sdk_init.cmake)
-
-# Initialise the Raspberry Pi Pico SDK
-pico_sdk_init()
 
 if (${USE-HTTPS} STREQUAL "true")
 	message("Building https version")
@@ -26,6 +23,9 @@ endif()
 
 # Add executable. Default name is the project name, version 0.1
 project(remote C CXX ASM)
+
+# Initialise the Raspberry Pi Pico SDK
+pico_sdk_init()
 
 # Add libraries
 add_subdirectory(${PICO_SDK_PATH}/../pico-filesystem pfs)
@@ -63,7 +63,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC pico_stdlib
 pico_add_extra_outputs(${PROJECT_NAME})
 
 
-find_package (Python3 REQUIRED COMPONENTS Interpreter)
 set(WEB_RESOURCE_FILES
  	data/index.html data/webremote.js
  	data/backup.html data/backup.js
@@ -74,9 +73,9 @@ set(WEB_RESOURCE_FILES
 	data/test.html data/test.js
 	data/log.html data/log.js
 	data/editprompt.html
-    data/webremote.css data/favicon.ico data/icons.json
+        data/webremote.css data/favicon.ico data/icons.json
 	data/back.svg data/bottom.svg data/down.svg data/download.svg data/top.svg data/up.svg
 	data/navigator.js
-    ${CERTS})
+        ${CERTS})
 
 web_files(DIR ${WEB_FILES_DIR} OUTPUT ${WEB_FILES} FILES ${WEB_RESOURCE_FILES} WEBSOCKET)
