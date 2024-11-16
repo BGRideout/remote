@@ -6,20 +6,12 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 
-#set(PICO_LWIP_PATH ${PICO_SDK_PATH}/../lwip)
-
 set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS 3000)
+
+#set(PICO_LWIP_PATH ${PICO_SDK_PATH}/../lwip)
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include($ENV{PICO_SDK_PATH}/pico_sdk_init.cmake)
-
-if (${USE-HTTPS} STREQUAL "true")
-	message("Building https version")
-	add_definitions(-DUSE_HTTPS)
-	set(CERTS data/newcert.pem data/newkey.pem)
-else()
-	message("Building http version")
-endif()
 
 # Add executable. Default name is the project name, version 0.1
 project(remote C CXX ASM)
@@ -38,6 +30,7 @@ add_executable(${PROJECT_NAME}
     remote.cpp
 	remote_remote.cpp remote_backup.cpp remote_setup.cpp remote_menu.cpp
 	remote_cleanup.cpp remote_config.cpp remote_test.cpp remote_log.cpp
+	remote_watchdog.cpp
 	remotefile.cpp
 	menu.cpp
 	irprocessor.cpp
@@ -45,10 +38,7 @@ add_executable(${PROJECT_NAME}
 	command.cpp
 	config.cpp
 	backup.cpp
-	${CMAKE_CURRENT_BINARY_DIR}/generated/web_files.cpp
 	)
-
-	target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 
 pico_set_program_name(${PROJECT_NAME} "remote")
 pico_set_program_version(${PROJECT_NAME} "0.1")
@@ -57,11 +47,12 @@ pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 1)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC pico_stdlib 
-    pico_cyw43_arch_lwip_threadsafe_background pico_lwip_mbedtls pico_mbedtls pico_lwip_mdns pico_lwip_sntp
-    flash_filesystem tiny-json bgr_network bgr_ir_protocols bgr_util bgr_json)
+    pico_cyw43_arch_lwip_threadsafe_background
+    flash_filesystem tiny-json
+	bgr_webserver bgr_ir_protocols bgr_util bgr_json
+	hardware_watchdog)
 
 pico_add_extra_outputs(${PROJECT_NAME})
-
 
 set(WEB_RESOURCE_FILES
  	data/index.html data/webremote.js
@@ -73,9 +64,8 @@ set(WEB_RESOURCE_FILES
 	data/test.html data/test.js
 	data/log.html data/log.js
 	data/editprompt.html
-        data/webremote.css data/favicon.ico data/icons.json
+	data/webremote.css data/favicon.ico data/icons.json
 	data/back.svg data/bottom.svg data/down.svg data/download.svg data/top.svg data/up.svg
-	data/navigator.js
-        ${CERTS})
+	data/navigator.js)
 
-web_files(DIR ${WEB_FILES_DIR} OUTPUT ${WEB_FILES} FILES ${WEB_RESOURCE_FILES} WEBSOCKET)
+web_files(FILES ${WEB_RESOURCE_FILES} WEBSOCKET)

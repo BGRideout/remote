@@ -65,6 +65,8 @@ bool Remote::backup_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool 
     std::string button = rqst.postValue("button");
     if (button == "upload")
     {
+        rfile_.clear();
+        efile_.clear();
         ret = Backup::loadBackup(rqst, msg);
         if (!ret)
         {

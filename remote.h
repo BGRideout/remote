@@ -61,6 +61,7 @@ private:
     bool get_efile(const std::string &url);
     bool get_efile(const std::string &url, WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
 
+    static bool tls_callback(WEB *web, std::string &cert, std::string &pkey, std::string &pkpass);
     bool http_message(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
     static bool http_message_(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close, void *udata)
      { return static_cast<Remote *>(udata)->http_message(web, client, rqst, close); }
@@ -86,7 +87,7 @@ private:
     bool menu_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
     bool menu_ir_get(WEB *web, ClientHandle client, const JSONMap &msgmap);
     bool config_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
-    bool config_update(WEB *web, ClientHandle client, const JSONMap &msgmap);
+    bool config_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
     bool config_get_wifi(WEB *web, ClientHandle client, const JSONMap &msgmap);
     bool config_scan_wifi(WEB *web, ClientHandle client, const JSONMap &msgmap);
     static bool config_scan_complete(WEB *web, ClientHandle client, const WiFiScanData &data, void *user_data);
@@ -118,8 +119,12 @@ private:
     void time_callback();
     static void time_callback_s() { get()->time_callback(); }
 
+    bool watchdog_active_;          // Watchdog active flag
+    void watchdog_init();
+    void watchdog_update();
+
     static Remote *singleton_;
-    Remote() : indicator_(nullptr), log_(new FileLogger(LOG_FILE)), time_initialized_(false) {}
+    Remote() : indicator_(nullptr), log_(new FileLogger(LOG_FILE)), time_initialized_(false), watchdog_active_(false) {}
 
     struct URLPROC
     {

@@ -36,7 +36,7 @@ Remote *Remote::singleton_ = nullptr;
 struct Remote::URLPROC Remote::funcs[] =
     {
         {std::regex("^/index(|\\.html)$", std::regex_constants::extended), &Remote::remote_get, nullptr},
-        {std::regex("^/config(|\\.html)$", std::regex_constants::extended), &Remote::config_get, nullptr},
+        {std::regex("^/config(|\\.html)$", std::regex_constants::extended), &Remote::config_get, &Remote::config_post},
         {std::regex("^/backup(|\\.html)$", std::regex_constants::extended), &Remote::backup_get, &Remote::backup_post},
         {std::regex("^/menu(|\\.html)$", std::regex_constants::extended), &Remote::menu_get, &Remote::menu_post},
         {std::regex("^(.*)/setup(|\\.html)$", std::regex_constants::extended), &Remote::setup_get, &Remote::setup_post},
@@ -52,7 +52,6 @@ struct Remote::WSPROC Remote::wsproc[] =
         {"ir_get", std::regex("^(.*)/setup(|\\.html)/([0-9]+)$", std::regex_constants::extended), &Remote::setup_ir_get},
         {"ir_get", std::regex("^/menu.*", std::regex_constants::extended), &Remote::menu_ir_get},
         {"ir_get", std::regex("^/test.*", std::regex_constants::extended), &Remote::test_ir_get},
-        {"config_update", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_update},
         {"get_wifi", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_get_wifi},
         {"scan_wifi", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_scan_wifi},
         {"test_send", std::regex("^/test.*", std::regex_constants::extended), &Remote::test_send},
@@ -72,6 +71,7 @@ bool Remote::init(int indicator_gpio, int button_gpio)
     
     WEB *web = WEB::get();
     web->setLogger(log_);
+    web->set_tls_callback(tls_callback);
     web->set_http_callback(http_message_, this);
     web->set_message_callback(ws_message_, this);
     web->set_notice_callback(web_state, this);
@@ -325,6 +325,7 @@ Command *Remote::getNextCommand()
     {
         ret = nullptr;
     }
+    watchdog_update();
     return ret;
 }
 
@@ -365,7 +366,6 @@ void Remote::web_state(int state, void *udata)
         WEB *web = WEB::get();
         std::string resp;
         config_wifi_message(web, resp);
-        self->log_->print("WiFi connect message: %s\n", resp.c_str());
         web->broadcast_websocket(resp);
     }
 }

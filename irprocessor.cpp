@@ -227,7 +227,7 @@ void IR_Processor::SendWorker::time_work()
             step = getStep(ii, true);
             if (irp_->remote_->logger()->isDebug(1))
             {
-                printf("%5d Step %2d: '%s' %d %d %d repeat=%s\n",
+                printf("%5d Menu step %2d: '%s' %d %d %d repeat=%s\n",
                     elapsed, ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
             }
             if (get_transmitter(step.type()))

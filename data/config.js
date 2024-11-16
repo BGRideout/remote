@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function()
   document.addEventListener('ws_state', ws_state_change);
   document.addEventListener('ws_message', process_ws_message);
   document.getElementById('scan').addEventListener('click', scan_wifi);
-  document.getElementById('update').addEventListener('click', config_update);
+  //document.getElementById('update').addEventListener('click', config_update);
   document.getElementById('ssids').addEventListener('change', ssid_select);
   openWS();
 });
@@ -32,6 +32,10 @@ function process_ws_message(evt)
       document.getElementById('ssid').value = msg['ssid'];
       document.getElementById('ip').innerHTML = msg['ip'];
       document.getElementById('timezone').value = msg['timezone'];
+      if (msg['https_ena'] == 'true')
+      {
+        document.getElementById('certs').style.display = 'grid';
+      }
     }
     else if (func == "wifi-ssids")
     {
