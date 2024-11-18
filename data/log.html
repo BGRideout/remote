@@ -2,34 +2,34 @@
 <html>
  <head>
   <title>Log File</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" type="text/css" href="/webremote.css" />
-  <script type="text/javascript" src="/log.js"></script>
-  <script type="text/javascript" src="/navigator.js"></script>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <link rel='stylesheet' type='text/css' href='/webremote.css' />
+  <script type='text/javascript' src='/log.js'></script>
+  <script type='text/javascript' src='/navigator.js'></script>
  </head>
- <body>
-    <button id = "backbtn" type="button" class="back" onclick="document.location='/'">
-        <img src="back.svg" alt="Home">
+ <body class='log'>
+    <button id = 'backbtn' type='button' class='back' onclick='document.location="/"'>
+        <img src='back.svg' alt='Home'>
     </button>
     <h1>Log File</h1>
-    <form id="btnForm" name="btnform" method="post">
+    <form id='btnForm' name='btnform' method='post'>
       <p>
-        <label for="from">Lines from</label> <input id="from" name="from" class="int" type="number" readonly value="<?from?>">
-        <label for="to">to</label> <input id="to" name="to" class="int" type="number" value="<?to?>" onchange="submitForm();">
+        <label for='from'>Lines from</label> <input id='from' name='from' class='int' type='number' readonly value='<?from?>'>
+        <label for='to'>to</label> <input id='to' name='to' class='int' type='number' value='<?to?>' onchange='submitForm();'>
       </p>
       <p>
-        <button type="submit" name="btn" value="null" style="display:none;"></button>
-        <button type="submit" name="btn" value="top"><img src="top.svg" alt="Top"></button>
-        <button type="submit" name="btn" value="up"><img src="up.svg" alt="Up 50"></button>
-        <button type="submit" name="btn" value="down"><img src="down.svg" alt="Down 50"></button>
-        <button type="submit" name="btn" value="bottom"><img src="bottom.svg" alt="Bottom"></button>
-        <label for="dbg">Debug</label> <input id="dbg" name="dbg" class="int" type="number" min="0" ma="3" value="<?dbglvl?>"
-                                              onchange="submitForm();">
-        <button type="submit" name="btn" value="download"><img src="download.svg" alt="Download"></button>
+        <button type='submit' name='btn' value='null' style='display:none;'></button>
+        <button type='submit' name='btn' value='top'><img src='top.svg' alt='Top'></button>
+        <button type='submit' name='btn' value='up'><img src='up.svg' alt='Up 50'></button>
+        <button type='submit' name='btn' value='down'><img src='down.svg' alt='Down 50'></button>
+        <button type='submit' name='btn' value='bottom'><img src='bottom.svg' alt='Bottom'></button>
+        <label for='dbg'>Debug</label> <input id='dbg' name='dbg' class='int' type='number' min='0' ma='3' value='<?dbglvl?>'
+                                              onchange='submitForm();'>
+        <button type='submit' name='btn' value='download'><img src='download.svg' alt='Download'></button>
       </p>
     </form>
-    <div id="log" class="scroll">
-        <pre class="logtext">
+    <div id='log' class='scroll'>
+        <pre class='logtext'>
             <?lines?>
         </pre>
     </div>

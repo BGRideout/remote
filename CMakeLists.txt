@@ -54,6 +54,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC pico_stdlib
 
 pico_add_extra_outputs(${PROJECT_NAME})
 
+# Redefine panic function
+target_compile_definitions(${PROJECT_NAME} PRIVATE PICO_PANIC_FUNCTION=watchdog_panic)
+
 set(WEB_RESOURCE_FILES
  	data/index.html data/webremote.js
  	data/backup.html data/backup.js

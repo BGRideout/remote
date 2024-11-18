@@ -27,10 +27,11 @@ Remote *Remote::singleton_ = nullptr;
 
 //  File system definition
 #define ROOT_OFFSET 0x110000
-#ifndef PICO_FLASH_BANK_TOTAL_SIZE
-#define ROOT_SIZE   (PICO_FLASH_SIZE_BYTES - ROOT_OFFSET)
-#else
+#if ENABLE_BLE
+#include <pico/btstack_flash_bank.h>
 #define ROOT_SIZE   (PICO_FLASH_SIZE_BYTES - ROOT_OFFSET - PICO_FLASH_BANK_TOTAL_SIZE)       // Leave 8K for bluetooth
+#else
+#define ROOT_SIZE   (PICO_FLASH_SIZE_BYTES - ROOT_OFFSET)
 #endif
 
 struct Remote::URLPROC Remote::funcs[] =
@@ -101,6 +102,8 @@ bool Remote::init(int indicator_gpio, int button_gpio)
         log_->print("Could not find load icons.json\n");
         ret = false;
     }
+
+    watchdog_init();
 
     return ret;
 }
@@ -325,7 +328,6 @@ Command *Remote::getNextCommand()
     {
         ret = nullptr;
     }
-    watchdog_update();
     return ret;
 }
 
@@ -374,7 +376,7 @@ void Remote::button_event(struct Button::ButtonEvent &ev, void *user_data)
 {
     if (ev.action == Button::Button_Clicked)
     {
-        static_cast<Remote *>(user_data)->log_->print("Start WiFi AP fo 30 minutes\n");
+        static_cast<Remote *>(user_data)->log_->print("Start WiFi AP for 30 minutes\n");
         WEB::get()->enable_ap(30, "webremote");
     }
 }

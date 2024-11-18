@@ -6,6 +6,7 @@
 #include "txt.h"
 #include "web_files.h"
 #include <stdio.h>
+#include <sys/stat.h>
 
 #define CERTFILENAME    "cert.pem"
 #define KEYFILENAME     "key.pem"
@@ -174,6 +175,16 @@ bool Remote::tls_callback(WEB *web, std::string &cert, std::string &pkey, std::s
     char    line[128];
 
     cert.clear();
+    pkey.clear();
+    pkpass.clear();
+
+    struct stat sb;
+    if (stat(CERTFILENAME, &sb) != 0 || sb.st_size < 64)
+    {
+        // No valid certificate file. Quietly return false
+        return false;
+    }
+
     FILE *fd = fopen(CERTFILENAME, "r");
     if (fd)
     {
@@ -189,7 +200,6 @@ bool Remote::tls_callback(WEB *web, std::string &cert, std::string &pkey, std::s
         ret = false;
     }
 
-    pkey.clear();
     fd = fopen(KEYFILENAME, "r");
     if (fd)
     {
@@ -205,7 +215,6 @@ bool Remote::tls_callback(WEB *web, std::string &cert, std::string &pkey, std::s
         ret = false;
     }
 
-    pkpass.clear();
     fd = fopen(PASSFILENAME, "r");
     if (fd)
     {

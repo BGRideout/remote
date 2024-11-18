@@ -119,12 +119,13 @@ private:
     void time_callback();
     static void time_callback_s() { get()->time_callback(); }
 
-    bool watchdog_active_;          // Watchdog active flag
-    void watchdog_init();
-    void watchdog_update();
+    static bool watchdog_active_;   // Watchdog active flag
+    static async_at_time_worker_t watchdog_worker_;
+    static void watchdog_init();
+    static void watchdog_periodic(async_context_t *, async_at_time_worker_t *);
 
     static Remote *singleton_;
-    Remote() : indicator_(nullptr), log_(new FileLogger(LOG_FILE)), time_initialized_(false), watchdog_active_(false) {}
+    Remote() : indicator_(nullptr), log_(new FileLogger(LOG_FILE)), time_initialized_(false) {}
 
     struct URLPROC
     {
