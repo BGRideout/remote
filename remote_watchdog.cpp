@@ -4,6 +4,7 @@
 #include "hardware/watchdog.h"
 #include "hardware/exception.h"
 #include "pico/stdio_usb.h"
+#include "cyw43_locker.h"
 
 #include <signal.h>
 
@@ -30,6 +31,7 @@ void Remote::watchdog_periodic(async_context_t *ctx, async_at_time_worker_t *par
     {
         if (!stdio_usb_connected())
         {
+            CYW43Locker lock;
             watchdog_update();
         }
         else

@@ -80,7 +80,14 @@ bool Remote::init(int indicator_gpio, int button_gpio)
     if (ret)
     {
         CONFIG *cfg = CONFIG::get();
-        ret = web->connect_to_wifi(cfg->hostname(), cfg->ssid(), cfg->password());
+        if (strlen(cfg->hostname()) > 0 && strlen(cfg->ssid()) > 0)
+        {
+            ret = web->connect_to_wifi(cfg->hostname(), cfg->ssid(), cfg->password());
+        }
+        else
+        {
+            web->enable_ap(30, "webremote");
+        }
     }
 
     set_time_set_cb(time_callback_s);
