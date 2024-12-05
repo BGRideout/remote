@@ -41,7 +41,7 @@ add_executable(${PROJECT_NAME}
 	)
 
 pico_set_program_name(${PROJECT_NAME} "remote")
-pico_set_program_version(${PROJECT_NAME} "0.1")
+pico_set_program_version(${PROJECT_NAME} "0.4")
 
 pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 1)
