@@ -10,3 +10,5 @@ The web page presents a set of buttons that can each implement any series of con
 
 Complete details in user manual (user-manual.odt)
 
+This project requires the picolibs repository to be installed in a parallel directory.
+
