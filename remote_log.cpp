@@ -1,4 +1,4 @@
-//                 ***** Remote class "test" methods  *****
+//                 ***** Remote class "log" methods  *****
 
 #include "remote.h"
 #include "file_logger.h"
