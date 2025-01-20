@@ -38,6 +38,7 @@ void Remote::list_files()
 
             ent = readdir(dir);
         }
+	closedir(dir);
     }
     log_->print("\n");
 }

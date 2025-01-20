@@ -545,6 +545,7 @@ int RemoteFile::actionFiles(std::set<std::string> &files)
             }
             ent = readdir(dir);
         }
+	closedir(dir);
     }
     return files.size() - nf;
 }
