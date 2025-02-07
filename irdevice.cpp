@@ -4,6 +4,8 @@
 
 #include "nec_transmitter.h"
 #include "nec_receiver.h"
+#include "samsung_transmitter.h"
+#include "samsung_receiver.h"
 #include "sony_transmitter.h"
 #include "sony_receiver.h"
 #include "raw_receiver.h"
@@ -17,15 +19,15 @@
 std::map<std::string, struct IR_Device::IRMap> IR_Device::irs_ =
             {
                 {"NEC", {.tx=IR_Device::new_NEC_tx, .decode=NEC_Receiver::decode}},
+                {"Sam", {.tx=IR_Device::new_SAM_tx, .decode=SAMSUNG_Receiver::decode}},
                 {"Sony12", {.tx=IR_Device::new_Sony12_tx, .decode=Sony12_Receiver::decode}},
                 {"Sony15", {.tx=IR_Device::new_Sony15_tx, .decode=Sony15_Receiver::decode}},
             };
 
 IR_LED *IR_Device::new_NEC_tx(int gpio) { return new NEC_Transmitter(gpio); }
+IR_LED *IR_Device::new_SAM_tx(int gpio) { return new SAMSUNG_Transmitter(gpio); }
 IR_LED *IR_Device::new_Sony12_tx(int gpio) { return new Sony12_Transmitter(gpio); }
 IR_LED *IR_Device::new_Sony15_tx(int gpio) { return new Sony15_Transmitter(gpio); }
-
-IR_Receiver *IR_Device::new_NEC_rx(int gpio) { return new NEC_Receiver(gpio); }
 
 IR_Device::IR_Device(int tx_gpio, int rx_gpio, async_context_t *asy_ctx)
      : tx_gpio_(tx_gpio), rx_gpio_(rx_gpio), tx_ir_led_(nullptr), rx_ir_led_(nullptr),

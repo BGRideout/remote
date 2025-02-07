@@ -37,7 +37,7 @@ private:
 
     static std::map<std::string, struct IRMap> irs_;
     static IR_LED *new_NEC_tx(int gpio);
-    static IR_Receiver *new_NEC_rx(int gpio);
+    static IR_LED *new_SAM_tx(int gpio);
     static IR_LED *new_Sony12_tx(int gpio);
     static IR_LED *new_Sony15_tx(int gpio);
 
