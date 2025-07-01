@@ -82,6 +82,7 @@ int Remote::add_missing_actions()
     get_references(files, references);
 
     references.insert("actions.json");
+    references.insert("actions_tvadapter.json");
     for (auto it = files.cbegin(); it != files.cend(); ++it)
     {
         references.erase(*it);
@@ -116,6 +117,7 @@ int Remote::remove_excess_actions()
     get_references(files, references);
 
     files.erase("actions.json");
+    files.erase("actions_tvadapter.json");
     for (auto it = references.cbegin(); it != references.cend(); ++it)
     {
         files.erase(*it);

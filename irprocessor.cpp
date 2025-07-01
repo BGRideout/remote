@@ -22,10 +22,26 @@ void IR_Processor::run()
 {
     while (true)
     {
-        Command *cmd = remote_->getNextCommand();
-        if (cmd)
+        bool go = !isBusy();
+        if (!go)
         {
-            do_command(cmd);
+            Command *cmd = remote_->peekNextCommand();
+            if (cmd)
+            {
+                if (cmd->url() != "/tvadapter" || cmd->action() == "press" || cmd->action() == "release")
+                {
+                    go = true;
+                }
+            }
+        }
+
+        if (go)
+        {
+            Command *cmd = remote_->getNextCommand();
+            if (cmd)
+            {
+                do_command(cmd);
+            }
         }
     }
 }
@@ -49,27 +65,34 @@ bool IR_Processor::do_command(Command *cmd)
     }
     else if (cmd->action() == "press")
     {
-        bool cancelled = cancel_repeat();
-        if (cmd->repeat() > 0 && cmd->redirect().empty())
+        if (!isRepeating(cmd))
         {
-            if (!cancelled && send_worker_->command() == nullptr)
+            bool cancelled = cancel_repeat();
+            if (cmd->repeat() > 0 && cmd->redirect().empty())
             {
-                cmd->setReply(cmd->action(), false);
-                do_repeat(cmd);
+                if (!cancelled && send_worker_->command() == nullptr)
+                {
+                    cmd->setReply(cmd->action(), false);
+                    do_repeat(cmd);
+                }
+                else
+                {
+                    cmd->setReply("busy");
+                }
+                do_reply(cmd);
             }
             else
             {
-                cmd->setReply("busy");
+                cmd->setReply("no-repeat", false);
+                if (!send(cmd))
+                {
+                    do_reply(cmd);
+                }
             }
-            do_reply(cmd);
         }
         else
         {
-            cmd->setReply("no-repeat", false);
-            if (!send(cmd))
-            {
-                do_reply(cmd);
-            }
+            repeat_worker_->continueRepeat();
         }
     }
     else if (cmd->action() == "release" || cmd->action()== "cancel")
@@ -136,17 +159,6 @@ bool IR_Processor::do_repeat(Command *cmd)
 
     if (rcmd->repeat() > 0)
     {
-        int repeat = rcmd->repeat();
-        int delays = sparam->getTime();
-        if (delays > repeat)
-        {
-            repeat = delays;
-        }
-        if (repeat < 20)
-        {
-            repeat = 20;
-        }
-        rparam->setInterval(repeat);
         ret = rparam->start();
     }
     return ret;
@@ -177,11 +189,13 @@ bool IR_Processor::SendWorker::start()
 {
     irProcessor()->add_to_busy(1);
     send_step_ = 0;
+    uint32_t pause = 0;
     if (!repeated())
     {
         start_time_ = to_ms_since_boot(get_absolute_time());
+        pause = cmd_->repeat();
     }
-    return async_context_add_at_time_worker_in_ms(asy_ctx_, &time_worker_, 0);
+    return async_context_add_at_time_worker_in_ms(asy_ctx_, &time_worker_, pause);
 }
 
 void IR_Processor::SendWorker::time_work(async_context_t *context, async_at_time_worker_t *worker)
@@ -196,12 +210,11 @@ void IR_Processor::SendWorker::time_work()
     int ii = sendStep();
     if (command() && ii < command()->steps().size())
     {
-        uint32_t elapsed = to_ms_since_boot(get_absolute_time()) - start_time_;
         Command::Step step = getStep(ii, true);
         if (irp_->remote_->logger()->isDebug(1))
         {
             printf("%5d Step %2d: '%s' %d %d %d repeat=%s\n",
-                elapsed, ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
+                elapsed(), ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
         }
 
         if (get_transmitter(step.type()))
@@ -228,7 +241,7 @@ void IR_Processor::SendWorker::time_work()
             if (irp_->remote_->logger()->isDebug(1))
             {
                 printf("%5d Menu step %2d: '%s' %d %d %d repeat=%s\n",
-                    elapsed, ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
+                    elapsed(), ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
             }
             if (get_transmitter(step.type()))
             {
@@ -352,11 +365,13 @@ bool IR_Processor::SendWorker::scheduleNext()
     if (get_transmitter(step.type()))
     {
         rpt = ir_led_->repeatInterval();
+        rpt = 0;
     }
     absolute_time_t next1 = make_timeout_time_ms(delay);
     absolute_time_t next2 = delayed_by_ms(time_worker_.next_time, rpt);
     time_worker_.next_time = absolute_time_diff_us(next1, next2) > 0 ? next2 : next1;
-    return async_context_add_at_time_worker(asy_ctx_, &time_worker_);
+    bool ret = async_context_add_at_time_worker(asy_ctx_, &time_worker_);
+    return ret;
 }
 
 bool IR_Processor::SendWorker::get_transmitter(const std::string &proto)
@@ -376,22 +391,16 @@ bool IR_Processor::RepeatWorker::start()
 {
     irProcessor()->add_to_busy(1);
     setActive();
-    time_worker_.next_time = get_absolute_time();
+    repeat_until_ = delayed_by_ms(get_absolute_time(), repeat_limit_);
     return send_->start();
 }
 
-void IR_Processor::RepeatWorker::time_work(async_context_t *context, async_at_time_worker_t *worker)
-{
-    RepeatWorker *param = repeatWorker(worker);
-    param->time_work();
-}
-
-void IR_Processor::RepeatWorker::time_work()
+void IR_Processor::RepeatWorker::repeat()
 {
     if (isActive())
     {
         SendWorker *send_param = sendWorker();
-        if (send_param->command() && interval() > 0)
+        if (send_param->command())
         {
             if (!reachedLimit())
             {
@@ -411,28 +420,16 @@ void IR_Processor::RepeatWorker::time_work()
     }
 }
 
-void IR_Processor::RepeatWorker::ir_complete(async_context_t *context, async_when_pending_worker_t *worker)
-{
-    RepeatWorker *param = repeatWorker(worker);
-    param->ir_complete();
-}
-
 void IR_Processor::RepeatWorker::ir_complete()
 {
     if (isActive())
     {
-        scheduleNext(interval());
+        repeat();
     }
     else if (!isIdle())
     {
         finish();
     }
-}
-
-bool IR_Processor::RepeatWorker::scheduleNext(int interval)
-{
-    time_worker_.next_time = delayed_by_ms(time_worker_.next_time, interval);
-    return async_context_add_at_time_worker(asy_ctx_, &time_worker_);
 }
 
 bool IR_Processor::RepeatWorker::cancel()
@@ -442,15 +439,16 @@ bool IR_Processor::RepeatWorker::cancel()
     {
         ret = true;
         count_ = -1;
+        repeat_until_ = get_absolute_time();
     }
     return ret;
 }
 
 void IR_Processor::RepeatWorker::finish()
 {
-    async_context_remove_at_time_worker(asy_ctx_, &time_worker_);
     send_->resetCommand();
     send_->reset();
     reset();
+    repeat_until_ = get_absolute_time();
     irProcessor()->add_to_busy(-1);
 }

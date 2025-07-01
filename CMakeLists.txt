@@ -30,7 +30,7 @@ add_executable(${PROJECT_NAME}
     remote.cpp
 	remote_remote.cpp remote_backup.cpp remote_setup.cpp remote_menu.cpp
 	remote_cleanup.cpp remote_config.cpp remote_test.cpp remote_log.cpp
-	remote_watchdog.cpp
+	remote_tvadapter.cpp remote_watchdog.cpp
 	remotefile.cpp
 	menu.cpp
 	irprocessor.cpp
@@ -43,7 +43,7 @@ add_executable(${PROJECT_NAME}
 pico_set_program_name(${PROJECT_NAME} "remote")
 pico_set_program_version(${PROJECT_NAME} "0.4")
 
-pico_enable_stdio_uart(${PROJECT_NAME} 0)
+pico_enable_stdio_uart(${PROJECT_NAME} 1)
 pico_enable_stdio_usb(${PROJECT_NAME} 1)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC pico_stdlib 

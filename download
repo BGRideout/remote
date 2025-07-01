@@ -1,3 +1,3 @@
 #! /usr/bin/bash
-openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program build/remote.elf verify reset"
+openocd -s tcl -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "adapter speed 5000" -c "program build/remote.elf verify reset"
 

@@ -68,6 +68,8 @@ private:
         void resetCommand() { if (cmd_) delete cmd_; cmd_ = nullptr; }
 
         bool start();
+        const uint32_t &start_time() const {return start_time_;}
+        uint32_t elapsed() const {return to_ms_since_boot(get_absolute_time()) - start_time_;}
 
         void setRepeatWorker(RepeatWorker *worker) { repeat_worker_ = worker; }
         void setRepeated(bool repeated = true) { repeated_ = repeated; }
@@ -88,49 +90,38 @@ private:
     private:
         IR_Processor                *irp_;              // Pointer to this object
         async_context_t             *asy_ctx_;          // Async context
-        async_at_time_worker_t      time_worker_;       // Repeat time worker
-        async_when_pending_worker_t ir_complete_;       // IR output complete worker
         SendWorker                  *send_;             // Send worker
-        int                         interval_;          // Repeat interval (ms)
         int                         count_;             // Limit counter / activity flag
+        const int                   repeat_limit_ = 500;// Repeat limit (msec)
+        absolute_time_t             repeat_until_;      // Repeat expiry time
 
         IR_Processor *irProcessor() const { return irp_; }
 
-        int interval() const { return interval_; }
-
         void setActive() { count_ = 1; }
-        bool isActive() const { return count_ > 0; }
-        bool reachedLimit() { return isActive() ? count_++ > 100 : false; }
+        bool reachedLimit()
+            { return isActive() ? count_++ > 100 || absolute_time_diff_us(get_absolute_time(), repeat_until_) < 0 : false; }
         bool isIdle() const { return count_ == 0; }
-        bool scheduleNext(int interval);
         void finish();
 
-        static void time_work(async_context_t *, async_at_time_worker_t *);
-        void time_work();
-        static void ir_complete(async_context_t *, async_when_pending_worker_t *);
+        void repeat();
         void ir_complete();
 
     public:
         RepeatWorker(IR_Processor *parent, async_context_t *async, SendWorker *sendWorker)
-         : irp_(parent), asy_ctx_(async), send_(sendWorker), interval_(0), count_(0)
+         : irp_(parent), asy_ctx_(async), send_(sendWorker), count_(0)
         {
-            time_worker_ = { .do_work = time_work, .user_data = this };
-            ir_complete_ = { .do_work = ir_complete, .user_data = this };
-            async_context_add_when_pending_worker(asy_ctx_, &ir_complete_);
         }
 
         bool start();
-        void setIRComplete() { if (count_ != 0) async_context_set_work_pending(asy_ctx_, &ir_complete_); }
+        bool isActive() const { return count_ > 0; }
+        void setIRComplete() { if (count_ != 0) ir_complete(); }
 
-        void setInterval(int interval) { interval_ = interval; }
         bool cancel();
-        void reset() { interval_ = 0; count_ = 0; }
+        void reset() { count_ = 0; }
+        void continueRepeat() {repeat_until_ = delayed_by_ms(get_absolute_time(), repeat_limit_);}
 
         SendWorker *sendWorker() const { return send_; }
     };
-
-    static RepeatWorker *repeatWorker(async_at_time_worker_t *worker) { return static_cast<RepeatWorker *>(worker->user_data); }
-    static RepeatWorker *repeatWorker(async_when_pending_worker_t *worker) { return static_cast<RepeatWorker *>(worker->user_data); }
 
     Remote                          *remote_;           // Remote object
     IR_Device                       *ir_device_;        // IR device object
@@ -140,6 +131,7 @@ private:
 
     int                             busy_;              // Busy counter
     void add_to_busy(int add);
+    bool isBusy() const { return busy_ != 0; }
     void (*busy_cb_)(bool busy, void *user_data);
     void *user_data_;
 
@@ -148,6 +140,8 @@ private:
     bool send(Command *cmd);
     bool do_repeat(Command *cmd);
     bool cancel_repeat();
+    bool isRepeating(const Command *cmd) const
+        {return repeat_worker_->isActive() && send_worker_->command() != nullptr && *send_worker_->command() == *cmd;}
 
     static void identified(const std::string &type, uint16_t address, uint16_t value, void *data);
 

@@ -56,6 +56,10 @@ struct Remote::WSPROC Remote::wsproc[] =
         {"get_wifi", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_get_wifi},
         {"scan_wifi", std::regex("^/config.*", std::regex_constants::extended), &Remote::config_scan_wifi},
         {"test_send", std::regex("^/test.*", std::regex_constants::extended), &Remote::test_send},
+        {"tv_btn_click", std::regex("^/tvadapter", std::regex_constants::extended), &Remote::tvadapter_button},
+        {"tv_btn_press", std::regex("^/tvadapter", std::regex_constants::extended), &Remote::tvadapter_button},
+        {"tv_btn_release", std::regex("^/tvadapter", std::regex_constants::extended), &Remote::tvadapter_button},
+        {"input_select", std::regex("^/tvadapter", std::regex_constants::extended), &Remote::tvadapter_input},
     };
 
 bool Remote::init(int indicator_gpio, int button_gpio)
@@ -194,10 +198,11 @@ void Remote::ws_message(WEB *web, ClientHandle client, const std::string &msg)
 {
     JSONMap msgmap(msg.c_str());
     const char *func = msgmap.strValue("func");
+    if (!func) func = msgmap.strValue("function");
     const char *path = msgmap.strValue("path");
     if (func && path)
     {
-        log_->print_debug(1, "%d WS func=%s, path=%s\n", client, func, path);
+        log_->print_debug(1, "%d WS func=%s, path=%s : %s\n", client, func, path, msg.c_str());
         bool found = false;
         for (int ii = 0; ii < count_of(wsproc); ii++)
         {
@@ -332,6 +337,16 @@ Command *Remote::getNextCommand()
 {
     Command *ret = nullptr;
     if (!queue_try_remove(&exec_queue_, &ret))
+    {
+        ret = nullptr;
+    }
+    return ret;
+}
+
+Command *Remote::peekNextCommand()
+{
+    Command *ret = nullptr;
+    if (!queue_try_peek(&exec_queue_, &ret))
     {
         ret = nullptr;
     }

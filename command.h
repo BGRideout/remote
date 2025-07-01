@@ -81,6 +81,8 @@ public:
     void setReply(const std::string &action, bool use_redirect=true);
 
     static std::string make_redirect(const std::string &base, const std::string &redirect);
+
+    bool operator ==(const Command &other) const {return url_ == other.url_ && action_ == other.action_ && button_ == other.button_;}
 };
 
 #endif

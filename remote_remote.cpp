@@ -106,5 +106,9 @@ bool Remote::remote_button(WEB *web, ClientHandle client, const JSONMap &msgmap)
         Command *cmd = new Command(web, client, msgmap, btn);
         queue_command(cmd);
     }
+    else
+    {
+        log_->print_error("Remote::remote_button  Did not find button %d in %s\n", button, url.c_str());
+    }
     return ret;
 }

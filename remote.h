@@ -99,6 +99,8 @@ private:
     bool log_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
     bool prompt_get(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
     bool prompt_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &close);
+    bool tvadapter_button(WEB *web, ClientHandle client, const JSONMap &msgmap);
+    bool tvadapter_input(WEB *web, ClientHandle client, const JSONMap &msgmap);
 
     void list_files();
     void get_references(std::set<std::string> &files, std::set<std::string> &references);
@@ -149,6 +151,7 @@ public:
     bool init(int indicator_gpio, int button_gpio);
 
     Command *getNextCommand();
+    Command *peekNextCommand();
     void commandReply(Command *command);
 
     static void ir_busy(bool busy, void *udata);

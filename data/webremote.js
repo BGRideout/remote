@@ -1,7 +1,8 @@
 
 // Event handling
 var event_time = undefined;     // Last event time
-var click_timer = undefined     // Click timer
+var click_timer = undefined;    // Click timer
+var repeat_timer = undefined;   // Key press repeat timer
 var ping_ = true;
  
 document.addEventListener("DOMContentLoaded", function()
@@ -88,6 +89,7 @@ function processPointerEvent(event)
         }
         else if (event.type == "pointerup")
         {
+            stop_repeat();
             if (event_time !== undefined)
             {
                 let dur = event.timeStamp - event_time;
@@ -109,6 +111,7 @@ function processPointerEvent(event)
         }
         else
         {
+            stop_repeat();
             if (event_time !== undefined)
             {
                 let dur = event.timeStamp - event_time;
@@ -130,9 +133,25 @@ function processPointerEvent(event)
 function start_hold(ix)
 {
     click_timer = undefined
-    sendToWS('{"func": "btnVal", "btnVal": "' + ix + '", ' +
+    let msg = '{"func": "btnVal", "btnVal": "' + ix + '", ' +
               '"action": "press", ' +
-              '"path": "' + document.location.pathname + '" }');
+              '"path": "' + document.location.pathname + '" }'
+    sendToWS(msg);
+    repeat_timer = setInterval(repeat_message, 250, msg);
+}
+
+function repeat_message(msg)
+{
+    sendToWS(msg);
+}
+
+function stop_repeat()
+{
+    if (repeat_timer !== undefined)
+    {
+        clearInterval(repeat_timer);
+        repeat_timer = undefined;
+    }
 }
 
 function showLED(state)

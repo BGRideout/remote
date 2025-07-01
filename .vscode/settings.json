@@ -1,6 +1,7 @@
 {
     "cmake.configureArgs": [
-        "-DPICO_BOARD=pico_w"
+        "-DPICO_BOARD=pico_w",
+        "-DPICO_PLATFORM=rp2040"
     ],
     "files.associations": {
         "*.tcc": "cpp",

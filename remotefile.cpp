@@ -176,6 +176,23 @@ RemoteFile::Button *RemoteFile::getButton(int position)
     return ret;
 }
 
+int RemoteFile::findButtonPosition(const char *label) const
+{
+    int btnpos = -1;
+    for (auto it = buttons_.cbegin(); it != buttons_.cend(); ++it)
+    {
+        const RemoteFile::Button &btn = *it;
+        const char *btnlbl = btn.label();
+        if (btnlbl[0] == '@') ++btnlbl;
+        if (strcasecmp(label, btnlbl) == 0)
+        {
+            btnpos = btn.position();
+            break;
+        }
+    }
+    return btnpos;
+}
+
 RemoteFile::Button *RemoteFile::addButton(int position, const char *label, const char *color, const char *redirect, int repeat)
 {
     Button *btn = nullptr;

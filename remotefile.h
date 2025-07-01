@@ -198,6 +198,15 @@ public:
     Button *getButton(int position);
 
     /**
+     * @brief   Find a button with a given label
+     * 
+     * @param   label   Label to find (leading @ ignored)
+     * 
+     * @return  button position if found or -1 if not
+     */
+    int findButtonPosition(const char *label) const;
+
+    /**
      * @brief   Add or update a button
      * 
      * @param   position    Position identifier of button
