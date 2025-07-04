@@ -18,6 +18,7 @@ Command::Command(WEB *web, ClientHandle client, const JSONMap &msgmap, const Rem
 
         if (button)
         {
+            label_ = button->label()[0] == '@' ? button->label() + 1 : button->label();
             button_ = button->position();
             redirect_ = button->redirect();
             repeat_ = button->repeat();
@@ -77,37 +78,48 @@ void Command::setStep(const std::string &type, uint16_t address, uint16_t value)
 
 void Command::setReply(const std::string &action, bool use_redirect)
 {
-    JSONMap::JMAP jmap;
-    jmap["button"] = std::to_string(button_);
-    jmap["action"] = action;
-    jmap["url"] = url_;
+    reply_.clear();
+    reply_["button"] = std::to_string(button_);
+    reply_["label"] = label_;
+    reply_["action"] = action;
+    reply_["url"] = url_;
 
     if (action_ == "ir_get")
     {
-        jmap["func"] = "ir_resp";
-        jmap["ir_resp"] = std::to_string(row_);
+        reply_["func"] = "ir_resp";
+        reply_["ir_resp"] = std::to_string(row_);
         if (steps_.size() == 1)
         {
-            jmap["type"] = steps_.front().type();
-            jmap["address"] = std::to_string(steps_.front().address());
-            jmap["value"] = std::to_string(steps_.front().value());
-            jmap["delay"] = std::to_string(steps_.front().delay());
+            reply_["type"] = steps_.front().type();
+            reply_["address"] = std::to_string(steps_.front().address());
+            reply_["value"] = std::to_string(steps_.front().value());
+            reply_["delay"] = std::to_string(steps_.front().delay());
         }
     }
     else if (action_ == "test_send")
     {
-        jmap["func"] = "send_resp";
+        reply_["func"] = "send_resp";
     }
     else
     {
-        jmap["func"] = "btn_resp";
+        reply_["func"] = "btn_resp";
         if (use_redirect)
         {
-            jmap["redirect"] = make_redirect(url_, redirect_);
+            reply_["redirect"] = make_redirect(url_, redirect_);
         }
     }
+}
 
-    JSONMap::fromMap(jmap, reply_);
+void Command::setReplyValue(const std::string &key, const std::string &value)
+{
+    reply_[key] = value;
+}
+
+std::string Command::reply() const
+{
+    std::string ret;
+    JSONMap::fromMap(reply_, ret);
+    return ret;
 }
 
 std::string Command::make_redirect(const std::string &base, const std::string &redirect)

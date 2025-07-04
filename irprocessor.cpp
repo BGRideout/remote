@@ -99,6 +99,7 @@ bool IR_Processor::do_command(Command *cmd)
     {
         cancel_repeat();
         cmd->setReply(cmd->action(), false);
+        cmd->setReplyValue("repetitions", std::to_string(send_worker_->repetitions()));
         do_reply(cmd);
     }
     else if (cmd->action() == "test_send")
@@ -192,6 +193,7 @@ bool IR_Processor::SendWorker::start()
     uint32_t pause = 0;
     if (!repeated())
     {
+        repetitions_ = 0;
         start_time_ = to_ms_since_boot(get_absolute_time());
         pause = cmd_->repeat();
     }
@@ -233,6 +235,7 @@ void IR_Processor::SendWorker::time_work()
             else
             {
                 ir_led_->repeat();
+                ++repetitions_;
             }
         }
         else if (getMenuSteps(step))
@@ -285,7 +288,7 @@ void IR_Processor::SendWorker::time_work()
         {
             reset();
         }
-    irProcessor()->add_to_busy(-1);
+        irProcessor()->add_to_busy(-1);
     }
 }
 

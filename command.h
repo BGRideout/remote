@@ -44,17 +44,18 @@ private:
     ClientHandle        client_;            // Handle to web client
 
     int                 button_;            // Button position
+    std::string         label_;             // Button label (w/o leading @)
     std::string         action_;            // Command action
     std::string         url_;               // Original URL
     double              duration_;          // Button hold duration
 
     std::string         redirect_;          // Redirection after command
-    int                 repeat_;            // Repeat interval
+    int                 repeat_;            // Delay before beginning repetition
     std::vector<Step>   steps_;             // Command steps
 
     int                 row_;               // Action row number
 
-    std::string         reply_;             // Reply string
+    JSONMap::JMAP       reply_;             // Reply
 
     static int          count_;             // Instance count
     
@@ -75,10 +76,11 @@ public:
     int repeat() const { return repeat_; }
     const std::vector<Step> &steps() { return steps_; }
     void setStep(const std::string &type, uint16_t address, uint16_t value);
-    const std::string &reply() const { return reply_; }
+    std::string reply() const;
 
     void setRepeat(int repeat) { repeat_ = repeat; }
     void setReply(const std::string &action, bool use_redirect=true);
+    void setReplyValue(const std::string &key, const std::string &value);
 
     static std::string make_redirect(const std::string &base, const std::string &redirect);
 
