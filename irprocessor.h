@@ -54,6 +54,8 @@ private:
         static void set_ir_complete(IR_LED *led, void *user_data);
         bool doReply() const { return do_reply_; }
 
+        void logStep(const char *name, const Command::Step &step, int stepno, bool repeat) const;
+
     public:
         SendWorker(IR_Processor *parent, async_context_t *async)
          : irp_(parent), ir_led_(nullptr), start_time_(0), asy_ctx_(async),

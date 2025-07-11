@@ -84,29 +84,33 @@ bool Remote::menu_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &c
         return true;
     }
 
+    Menu *menu = nullptr;
     const char *name = rqst.postValue("name");
     const char *original = rqst.postValue("original");
     if (original)
     {
-        Menu *menu = nullptr;
         if (strlen(original) == 0 && name && strlen(name) > 0)
         {
             // New menu
             menu = Menu::addMenu(name);
         }
-        else
+        else if (strlen(original) > 0)
         {
             menu = Menu::getMenu(original);
+            if (!name || strlen(name) == 0)
+            {
+                Menu::deleteMenu(original);
+                menu = nullptr;
+            }
         }
 
-        if (menu)
+        if (menu && name && strlen(name) > 0)
         {
             const char *value = rqst.postValue("rows");
             if (value)
             {
                 menu->setRowsPerColumn(value);
             }
-
 
             std::vector<const char *> typ;
             std::vector<const char *> add;
@@ -134,11 +138,15 @@ bool Remote::menu_post(WEB *web, ClientHandle client, HTTPRequest &rqst, bool &c
                 }
             }
 
+            menu->rename(name);
             menu->saveFile();
         }
 
-        std::string resp("HTTP/1.1 303 OK\r\nLocation: /menu?menu=");
-        resp += original;
+        std::string resp("HTTP/1.1 303 OK\r\nLocation: /menu");
+        if (menu)
+        {
+            resp += "?menu=" + menu->name();
+        }
         resp += "\r\nConnection: keep-alive\r\n\r\n";
         web->send_data(client, resp.c_str(), resp.length());
         close = false;

@@ -213,12 +213,6 @@ void IR_Processor::SendWorker::time_work()
     if (command() && ii < command()->steps().size())
     {
         Command::Step step = getStep(ii, true);
-        if (irp_->remote_->logger()->isDebug(1))
-        {
-            printf("%5d Step %2d: '%s' %d %d %d repeat=%s\n",
-                elapsed(), ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
-        }
-
         if (get_transmitter(step.type()))
         {
             bool repeat = repeated() ||
@@ -237,15 +231,11 @@ void IR_Processor::SendWorker::time_work()
                 ir_led_->repeat();
                 ++repetitions_;
             }
+            logStep("Step", step, ii, repeat);
         }
         else if (getMenuSteps(step))
         {
             step = getStep(ii, true);
-            if (irp_->remote_->logger()->isDebug(1))
-            {
-                printf("%5d Menu step %2d: '%s' %d %d %d repeat=%s\n",
-                    elapsed(), ii, step.type().c_str(), step.address(), step.value(), step.delay(), repeated() ? "T" : "F");
-            }
             if (get_transmitter(step.type()))
             {
                 last_step_ = step;
@@ -258,9 +248,16 @@ void IR_Processor::SendWorker::time_work()
                 {
                     ir_led_->repeat();
                 }
+                logStep("Menu Step", step, ii, repeated());
+            }
+            else if (step.type().empty())
+            {
+                last_step_ = step;
+                logStep("Menu Blank", step, ii, repeated());
             }
             else
             {
+                logStep("Menu Done", step, ii, repeated());
                 set_ir_complete(nullptr, this);
             }
         }
@@ -289,6 +286,15 @@ void IR_Processor::SendWorker::time_work()
             reset();
         }
         irProcessor()->add_to_busy(-1);
+    }
+}
+
+void IR_Processor::SendWorker::logStep(const char *name, const Command::Step &step, int stepno, bool repeat) const
+{
+    if (irp_->remote_->logger()->isDebug(1))
+    {
+        irp_->remote_->logger()->print("%5d %s %2d: '%s' %d %d %d repeat=%s\n",
+            elapsed(), name, stepno, step.type().c_str(), step.address(), step.value(), step.delay(), repeat ? "T" : "F");
     }
 }
 

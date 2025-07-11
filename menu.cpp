@@ -6,16 +6,33 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <unistd.h>
 #include <sstream>
 
 std::map<std::string, Menu *> Menu::menus_;
 
+Menu::Menu() : curcol_(-1), data_(nullptr), datasize_(0)
+{
+    const char *cmds[] = {"open", "up", "down", "left", "right", "ok"};
+    for (int ii = 0; ii < 6; ii++)
+    {
+        commands_[cmds[ii]] = Command::Step("", 0, 0, 0);
+    }
+}
+
+Menu::Menu(const std::string &name) : curcol_(-1), data_(nullptr), datasize_(0)
+{
+    setName(name);
+    const char *cmds[] = {"open", "up", "down", "left", "right", "ok"};
+    for (int ii = 0; ii < 6; ii++)
+    {
+        commands_[cmds[ii]] = Command::Step("", 0, 0, 0);
+    }
+}
+
 bool Menu::loadMenu(const char *name)
 {
-    std::string filename("menu_");
-    filename += name;
-    filename += ".json";
-    return loadFile(filename.c_str());
+    return loadFile(menuFile(name).c_str());
 }
 
 bool Menu::loadFile(const char *filename)
@@ -79,7 +96,7 @@ bool Menu::loadJSON(const json_t *json)
     const json_t *prop = json_getProperty(json, "name");
     if (prop)
     {
-        name_ = json_getValue(prop);
+        setName(json_getValue(prop));
     }
     else
     {
@@ -88,12 +105,17 @@ bool Menu::loadJSON(const json_t *json)
         {
             i1 += 1;
             std::size_t i2 = filename_.find('.', i1);
-            name_ = filename_.substr(i1, i2 - i1);
+            setName(filename_.substr(i1, i2 - i1));
         }
         else
         {
             ret = false;
         }
+    }
+
+    if (ret)
+    {
+        ret = !name_.empty();
     }
 
     if (ret)
@@ -164,7 +186,7 @@ bool Menu::loadJSON(const json_t *json)
 
 void Menu::outputJSON(std::ostream &strm) const
 {
-    strm << "{\n\"file\": \"menu_" << name_ << ".json\",\n"
+    strm << "{\n\"file\": \"" << menuFile(name_) << "\",\n"
          << "\"name\": \"" << name_ << "\",\n";
 
     for (auto it = commands_.cbegin(); it != commands_.cend(); ++it)
@@ -186,21 +208,26 @@ void Menu::outputJSON(std::ostream &strm) const
 bool Menu::saveFile() const
 {
     bool ret = false;
-    std::string filename("menu_");
-    filename += name_;
-    filename += ".json";
-    FILE *f = fopen(filename_.c_str(), "w");
-    if (f)
+    if (name_.length() > 0)
     {
-        ret = true;
-        std::ostringstream out;
-        outputJSON(out);
-        size_t n = fwrite(out.str().c_str(), out.str().size(), 1, f);
-        int sts = fclose(f);
-        if (n != 1 || sts != 0)
+        std::string filename = menuFile(name_);
+        FILE *f = fopen(filename.c_str(), "w");
+        if (f)
         {
-            printf("Failed to write file %s: n=%d sts=%d\n", filename_.c_str(), n, sts);
-            ret = false;
+            ret = true;
+            std::ostringstream out;
+            outputJSON(out);
+            size_t n = fwrite(out.str().c_str(), out.str().size(), 1, f);
+            int sts = fclose(f);
+            if (n != 1 || sts != 0)
+            {
+                printf("Failed to write file %s: n=%d sts=%d\n", filename.c_str(), n, sts);
+                ret = false;
+            }
+        }
+        else
+        {
+            printf("Failed to open '%s'. err=%d : %s\n", filename.c_str(), errno, strerror(errno));
         }
     }
     return ret;
@@ -209,21 +236,25 @@ bool Menu::saveFile() const
 Menu *Menu::getMenu(const std::string &name)
 {
     Menu *ret = nullptr;
-    auto it = menus_.find(name);
-    if (it == menus_.end())
+    if (!name.empty())
     {
-        std::pair<std::map<std::string, Menu *>::iterator, bool> ins = menus_.emplace(name, new Menu());
-        it = ins.first;
-        ret = it->second;
-        if (!ret->loadMenu(name.c_str()))
+        auto it = menus_.find(name);
+        if (it != menus_.end())
         {
-            delete ret;
-            menus_[name] = nullptr;
-            printf("'%s' is not a menu\n", name.c_str());
+            ret = it->second;
+        }
+        else
+        {
+            ret = new Menu();
+            if (!ret->loadMenu(name.c_str()))
+            {
+                delete ret;
+                ret = nullptr;
+                menus_.erase(name);
+                printf("'%s' is not a menu\n", name.c_str());
+            }
         }
     }
-
-    ret = it->second;
     return ret;
 }
 
@@ -232,9 +263,72 @@ Menu *Menu::addMenu(const std::string &name)
     Menu *ret = getMenu(name);
     if (!ret)
     {
-        ret = new Menu();
-        ret->setName(name);
-        menus_[name] = ret;
+        ret = new Menu(name);
+    }
+    return ret;
+}
+
+bool Menu::deleteMenu(const char *name)
+{
+    bool ret = false;
+    std::string filename = menuFile(name);
+    if (unlink(filename.c_str()) == 0)
+    {
+        ret = true;
+    }
+    auto it = menus_.find(name);
+    if (it != menus_.end())
+    {
+        delete it->second;
+        menus_.erase(name);
+    }
+    return ret;
+}
+
+bool Menu::setName(const std::string &name)
+{
+    bool ret = true;
+    if (name != name_ && !name.empty())
+    {
+        if (!name_.empty())
+        {
+            auto it = menus_.find(name_);
+            if (it != menus_.end())
+            {
+                if (it->second != this)
+                {
+                    delete it->second;
+                }
+                menus_.erase(name_);
+            }
+        }
+        name_ = name;
+        menus_[name_] = this;
+    }
+    return ret;
+}
+
+bool Menu::rename(const std::string &name)
+{
+    bool ret = true;
+    if (name != name_ && !name.empty())
+    {
+        std::string newname = name;
+        std::string newfile = menuFile(name);
+        struct stat sb;
+        int seq = 0;
+        while (stat(newfile.c_str(), &sb) == 0 && seq < 99)
+        {
+            ++seq;
+            newname = name + "_" + std::to_string(seq);
+            newfile = menuFile(newname);
+        }
+        if (!name_.empty())
+        {
+            std::string oldfile = menuFile(name_);
+            ::rename(oldfile.c_str(), newfile.c_str());
+        }
+        setName(newname);
     }
     return ret;
 }

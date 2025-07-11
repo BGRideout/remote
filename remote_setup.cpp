@@ -187,8 +187,8 @@ bool Remote::setup_btn_get(WEB *web, ClientHandle client, HTTPRequest &rqst, boo
             {
                 action = "<tr>";
                 action += "<td><input type=\"text\" name=\"typ\" value=\"" + std::string(it->type()) + "\" /></td>";
-                action += "<td><input type=\"number\" name=\"add\" value=\"" + std::to_string(it->address()) + "\" /></td>";
-                action += "<td><input type=\"number\" name=\"val\" value=\"" + std::to_string(it->value()) + "\" /></td>";
+                action += "<td><input type=\"text\" pattern=\"(0x[0-9a-fA-F]+|[0-9]*)\" name=\"add\" value=\"" + std::to_string(it->address()) + "\" /></td>";
+                action += "<td><input type=\"text\" pattern=\"(0x[0-9a-fA-F]+|[0-9]*)\" name=\"val\" value=\"" + std::to_string(it->value()) + "\" /></td>";
                 action += "<td><input type=\"number\" name=\"dly\" value=\"" + std::to_string(it->delay()) + "\" /></td>";
                 action += "<td><button type=\"submit\" name=\"add_row\" value=\"" + std::to_string(row) + "\">+</button></td>";
                 action += "<td><button type=\"button\" onclick=\"load_ir(" + std::to_string(row) + ");\">&lt;-IR</button></td>";

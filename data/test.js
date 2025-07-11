@@ -17,15 +17,22 @@ function load_ir()
 
 function send_ir()
 {
-    let typ = document.getElementById("typ").value;
-    let add = document.getElementById("add").value;
-    let val = document.getElementById("val").value;
-    let msg = '{"func":"test_send", "type":"' + typ + '", "address":"' + add + '", "value":"' + val +
-                '", "path": "' + document.location.pathname + '"}'
-    console.log(msg);
     let ntc = document.getElementById("ntc");
-    ntc.innerHTML = "Sending ...";
-    sendToWS(msg);
+    let typ = document.getElementById("typ").value;
+    let add = parseInt(document.getElementById("add").value);
+    let val = parseInt(document.getElementById("val").value);
+    if (Number.isNaN(add) || Number.isNaN(val))
+    {
+        ntc.innerHTML = "Addr and Cmd must be numbers";
+    }
+    else
+    {
+        let msg = '{"func":"test_send", "type":"' + typ + '", "address":"' + add + '", "value":"' + val +
+                    '", "path": "' + document.location.pathname + '"}'
+        console.log(msg);
+        ntc.innerHTML = "Sending ...";
+        sendToWS(msg);
+    }
 }
 
 function process_ws_message(evt)

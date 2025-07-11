@@ -410,7 +410,7 @@ uint16_t Remote::to_u16(const std::string &str)
     {
         try
         {
-            uint32_t val = std::stoul(str);
+            uint32_t val = std::stoul(str, nullptr, 0);
             if (val <= 0xffff)
             {
                 ret = static_cast<uint16_t>(val);

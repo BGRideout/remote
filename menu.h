@@ -34,8 +34,12 @@ private:
 
     static std::map<std::string, Menu *> menus_;    // Map of known menus
 
+    static std::string menuFile(const std::string &name) { return "menu_" + name + ".json"; }
+    bool setName(const std::string &name);
+
 public:
-    Menu() : curcol_(-1), data_(nullptr), datasize_(0) {}
+    Menu();
+    Menu(const std::string &name);
     ~Menu() {}
 
     bool loadMenu(const char *name);
@@ -47,7 +51,7 @@ public:
     void clear() { name_.clear(), commands_.clear(); rows_.clear(), colrow_.clear(); }
 
     const std::string &name() const { return name_; }
-    void setName(const std::string &name) { name_ = name; }
+    bool rename(const std::string &name);
 
     /**
      * @brief   Add a new menu
@@ -57,6 +61,15 @@ public:
      * @return  Pointer to new menu or existing if name already defined
      */
     static Menu *addMenu(const std::string &name);
+
+    /**
+     * @brief   Delete a menu
+     * 
+     * @param   name    Name of menu to delete
+     * 
+     * @return  true if menu deleted
+     */
+    static bool deleteMenu(const char *name);
 
     /**
      * @brief   Get a menu by name
