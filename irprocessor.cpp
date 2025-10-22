@@ -8,7 +8,7 @@
 #include <pico/stdlib.h>
 
 IR_Processor::IR_Processor(Remote *remote, int gpio_send, int gpio_receive)
-     : remote_(remote), busy_(0), busy_cb_(nullptr), user_data_(nullptr)
+     : remote_(remote), busy_(0), busy_cb_(nullptr), user_data_(nullptr), tvadapter_(0)
 {
     asy_ctx_ = cyw43_arch_async_context();
     ir_device_ = new IR_Device(gpio_send, gpio_receive, asy_ctx_);
@@ -40,6 +40,15 @@ void IR_Processor::run()
             Command *cmd = remote_->getNextCommand();
             if (cmd)
             {
+                if (cmd->url() == "/tvadapter")
+                {
+                    if (tvadapter_ != cmd->client())
+                    {
+                        remote_->logger()->print("tvadapter handle %u -> %u\n", tvadapter_, cmd->client());
+
+                    }
+                    tvadapter_ = cmd->client();
+                }
                 do_command(cmd);
             }
         }
@@ -184,6 +193,26 @@ void IR_Processor::add_to_busy(int add)
     }
 }
 
+bool IR_Processor::send_cec_message(Command::Step &step)
+{
+    bool ret = false;
+    if (tvadapter_ != 0)
+    {
+        std::string message = "{\"action\":\"cec\",\"cmd\":\"" + step.type().substr(4) +
+                            "\",\"val1\":" + std::to_string(step.address()) +
+                            ",\"val2\":" + std::to_string(step.value()) + "}";
+        remote_->logger()->print_debug(2, "CEC message: %s\n", message.c_str());
+        ret = WEB::get()->send_message(tvadapter_, message);
+        if (!ret)
+        {
+            remote_->logger()->print("Invalid handle %u for CEC command\n", tvadapter_);
+            tvadapter_ = 0;
+        }
+    }
+    return ret;
+}
+
+
 //  *****  SendWorker  *****
 
 bool IR_Processor::SendWorker::start()
@@ -232,6 +261,11 @@ void IR_Processor::SendWorker::time_work()
                 ++repetitions_;
             }
             logStep("Step", step, ii, repeat);
+        }
+        else if (step.type().length() > 4 && step.type().substr(0, 4) == "cec:")
+        {
+            irp_->send_cec_message(step);
+            set_ir_complete(nullptr, this);
         }
         else if (getMenuSteps(step))
         {

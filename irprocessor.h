@@ -132,6 +132,7 @@ private:
     SendWorker                      *send_worker_;      // Send step worker
     RepeatWorker                    *repeat_worker_;    // Repeat worker
     async_context_t                 *asy_ctx_;          // Async context
+    ClientHandle                    tvadapter_;         // Handle for tvadapter websocket
 
     int                             busy_;              // Busy counter
     void add_to_busy(int add);
@@ -148,6 +149,8 @@ private:
         {return repeat_worker_->isActive() && send_worker_->command() != nullptr && *send_worker_->command() == *cmd;}
 
     static void identified(const std::string &type, uint16_t address, uint16_t value, void *data);
+
+    bool send_cec_message(Command::Step &step);
 
 public:
     IR_Processor(Remote*remote, int gpio_send, int gpio_receive);

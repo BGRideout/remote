@@ -58,6 +58,13 @@
         "bitset": "cpp",
         "regex": "cpp",
         "fstream": "cpp",
-        "mdns.h": "c"
+        "mdns.h": "c",
+        "sntp.h": "c",
+        "charconv": "cpp",
+        "format": "cpp",
+        "optional": "cpp",
+        "span": "cpp",
+        "variant": "cpp",
+        "text_encoding": "cpp"
     }
 }
