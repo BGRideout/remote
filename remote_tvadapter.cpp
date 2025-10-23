@@ -36,6 +36,7 @@ bool Remote::tvadapter_input(WEB *web, ClientHandle client, const JSONMap &msgma
     int addr = msgmap.intValue("address", -1);
     if (addr >= 0 && addr < 15)
     {
+        get_rfile("/tvadapter.html");
         int addrs[2] = {addr, 0};
         for (int ii = 0; !ret && ii < 2; ii++)
         {
